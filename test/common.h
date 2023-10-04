@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Sergei Iskakov
+ * Copyright (c) 2023 University of Michigan
  *
  */
 
@@ -12,8 +12,8 @@
 
 using namespace green;
 
-template <typename T, ndarray::storage_type ST>
-inline void initialize_array(ndarray::ndarray<T, ST>& array) {
+template <typename T, size_t Dim, ndarray::storage_type ST>
+inline void initialize_array(ndarray::ndarray<T, Dim, ST>& array) {
   // Specify the engine and distribution.
   std::mt19937                           mersenne_engine(1);  // Generates pseudo-random integers
   std::uniform_real_distribution<double> dist{0.0, 10.0};
