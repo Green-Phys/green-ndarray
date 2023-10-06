@@ -9,6 +9,7 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(Catch2)
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 
 add_executable(ndarray_test ndarray_test.cpp ndarray_math_test.cpp)
 target_link_libraries(ndarray_test
