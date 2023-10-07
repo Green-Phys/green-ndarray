@@ -35,7 +35,10 @@ namespace green::ndarray {
     /**
      * Default constructor
      */
-    ndarray() : shape_(0), strides_(0), size_(0), offset_(0) {}
+    ndarray() : shape_(), strides_(), size_(0), offset_(0) {
+      std::fill(shape_.begin(), shape_.end(), 0);
+      std::fill(strides_.begin(), strides_.end(), 0);
+    }
 
     /**
      * Constructor for initialization from dimensions (allocates memory for attribute storage_).

@@ -20,6 +20,7 @@ void test_const_array(ndarray::ndarray<double, 5>& arr1, const ndarray::ndarray<
 TEST_CASE("NDArrayTest") {
   SECTION("Init") {
     ndarray::ndarray<double, 5> array(1, 2, 3, 4, 5);
+    ndarray::ndarray<double, 5> default_array;
     REQUIRE(array.size() == 1 * 2 * 3 * 4 * 5);
     REQUIRE(array.strides()[0] == 120);
     REQUIRE(array.strides()[1] == 60);
