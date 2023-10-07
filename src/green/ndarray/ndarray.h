@@ -55,8 +55,12 @@ namespace green::ndarray {
      *
      * @param[in] shape is array while D is its dimension.
      */
-    template <typename shape_type>
-    explicit ndarray(const shape_type& shape) :
+    explicit ndarray(const std::array<size_t, Dim>& shape) :
+        shape_(get_shape(shape)), strides_(strides_for_shape(shape)), size_(size_for_shape(shape)), offset_(0),
+        storage_(new T[size_], std::default_delete<T[]>()) {
+      set_value(0.0);
+    }
+    explicit ndarray(const std::vector<size_t>& shape) :
         shape_(get_shape(shape)), strides_(strides_for_shape(shape)), size_(size_for_shape(shape)), offset_(0),
         storage_(new T[size_], std::default_delete<T[]>()) {
       set_value(0.0);
@@ -279,13 +283,26 @@ namespace green::ndarray {
      */
 
     template <typename... Indices>
-    auto reshape(Indices... shape_inds) const {
-      std::array<size_t, sizeof...(Indices)> new_shape{{size_t(shape_inds)...}};
+    auto reshape(size_t ind1, Indices... shape_inds) const {
+      std::array<size_t, sizeof...(Indices) + 1> new_shape{
+          {ind1, size_t(shape_inds)...}
+      };
 #ifndef NDEBUG
       if (size_for_shape(new_shape) != size_) throw std::logic_error("new shape is not consistent with old one");
 #endif
-      ndarray<T, sizeof...(Indices), ST> result(*this);
-      return result.inplace_reshape({{size_t(shape_inds)...}});
+      ndarray<T, sizeof...(Indices) + 1, ST> result(*this);
+      return result.inplace_reshape(new_shape);
+    }
+
+    auto reshape(const std::vector<size_t>& new_shape_v) const {
+      std::array<size_t, Dim> new_shape;
+      std::copy(new_shape_v.begin(), new_shape_v.end(), new_shape.begin());
+#ifndef NDEBUG
+      if (new_shape_v.size() != Dim || size_for_shape(new_shape) != size_)
+        throw std::logic_error("new shape is not consistent with old one");
+#endif
+      ndarray<T, Dim, ST> result(*this);
+      return result.inplace_reshape(new_shape);
     }
 
     ndarray<T, Dim, ST> inplace_reshape(const std::array<size_t, Dim>& shape) {
