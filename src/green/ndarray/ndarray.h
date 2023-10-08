@@ -301,6 +301,16 @@ namespace green::ndarray {
       return result.inplace_reshape(new_shape);
     }
 
+    template<size_t NewDim>
+    auto reshape(const std::array<size_t, NewDim>& new_shape) const {
+#ifndef NDEBUG
+      if (size_for_shape(new_shape) != size_)
+        throw std::logic_error("new shape is not consistent with old one");
+#endif
+      ndarray<T, NewDim, ST> result(*this);
+      return result.inplace_reshape(new_shape);
+    }
+
     auto reshape(const std::vector<size_t>& new_shape_v) const {
       std::array<size_t, Dim> new_shape;
       std::copy(new_shape_v.begin(), new_shape_v.end(), new_shape.begin());
