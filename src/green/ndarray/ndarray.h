@@ -25,7 +25,11 @@ namespace green::ndarray {
   template <typename T>
   struct is_complex<std::complex<T>> : std::true_type {};
   template <typename T>
+  constexpr bool is_complex_v = is_complex<T>::value;
+  template <typename T>
   using is_scalar = std::integral_constant<bool, std::is_arithmetic<T>::value || is_complex<T>::value>;
+  template <typename T>
+  constexpr bool is_scalar_v = is_scalar<T>::value;
   enum storage_type { OWN_MEMORY, REFERENCE_MEMORY };
 
   template <typename T, size_t Dim, storage_type ST = OWN_MEMORY>

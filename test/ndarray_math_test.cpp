@@ -44,6 +44,32 @@ TEST_CASE("NDArrayMathTest") {
     REQUIRE(std::abs(arr3(1, 2) - arr5(1, 2)) < 1e-12);
   }
 
+  SECTION("InplaceMathWithScalars") {
+    ndarray::ndarray<double, 4> arr1(1, 2, 3, 4);
+    initialize_array(arr1);
+    auto                                      arr1_copy = arr1.copy();
+    ndarray::ndarray<std::complex<double>, 4> arr2(1, 2, 3, 4);
+    initialize_array(arr2);
+    auto                                      arr2_copy = arr2.copy();
+    float                add  = 1.0f;
+    double               sub  = 2.0;
+    std::complex<float>  mult = 1.0if;
+    std::complex<double> div  = 3. + 2.0i;
+    arr1 += add;
+    REQUIRE(std::equal(arr1.begin(), arr1.end(), arr1_copy.begin(),
+                       [&](double a, double b) { return std::abs(a - (b + add)) < 1e-12; }));
+    arr1 -= sub;
+    REQUIRE(std::equal(arr1.begin(), arr1.end(), arr1_copy.begin(),
+                       [&](double a, double b) { return std::abs(a - (b + add - sub)) < 1e-12; }));
+    arr2 *= mult;
+    REQUIRE(std::equal(arr2.begin(), arr2.end(), arr2_copy.begin(),
+                       [&](const auto& a, const auto& b) { return std::abs(a.real() - b.imag()) < 1e-12; }));
+    arr2 /= div;
+    REQUIRE(std::equal(arr2.begin(), arr2.end(), arr2_copy.begin(),
+                       [&](const auto& a, const auto& b) { return std::abs(a - b*std::complex<double>(mult)/div) < 1e-12; }));
+
+  }
+
   SECTION("MathAddSubConversion") {
     ndarray::ndarray<double, 4> arr1(1, 2, 3, 4);
     initialize_array(arr1);
