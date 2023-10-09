@@ -211,12 +211,12 @@ namespace green::ndarray {
      * @return sub-ndarray at `inds` indices
      */
     template <typename... Indices>
-    std::enable_if_t<sizeof...(Indices) < Dim, ndarray<T, Dim - sizeof...(Indices)>> operator()(Indices... inds) {
+    std::enable_if_t<sizeof...(Indices) < Dim, ndarray<T, Dim - sizeof...(Indices), ST>> operator()(Indices... inds) {
 #ifndef NDEBUG
       size_t num_of_inds = sizeof...(Indices);
       check_dimensions(shape_, num_of_inds);
 #endif
-      return ndarray<T, Dim - sizeof...(Indices)>(*this, inds...);
+      return ndarray<T, Dim - sizeof...(Indices), ST>(*this, inds...);
     };
 
     /**

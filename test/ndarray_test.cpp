@@ -91,6 +91,16 @@ TEST_CASE("NDArrayTest") {
     REQUIRE(array3.strides()[1] == 1);
     REQUIRE(array3.shape()[0] == 4);
     REQUIRE(array3.shape()[1] == 5);
+    // Slicing over array with Reference memoru
+    ndarray::ndarray<double, 5, green::ndarray::REFERENCE_MEMORY> array_ref(array.data(), 1, 2, 3, 4, 5);
+    auto array2_ref = array_ref(0, 1);
+    REQUIRE(array2_ref.size() == 3 * 4 * 5);
+    REQUIRE(array2_ref.strides()[0] == 20);
+    REQUIRE(array2_ref.strides()[1] == 5);
+    REQUIRE(array2_ref.strides()[2] == 1);
+    REQUIRE(array2_ref.shape()[0] == 3);
+    REQUIRE(array2_ref.shape()[1] == 4);
+    REQUIRE(array2_ref.shape()[2] == 5);
   }
 
   SECTION("Scalar") {
