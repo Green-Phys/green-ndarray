@@ -12,6 +12,8 @@
 
 using namespace green;
 
+using namespace std::complex_literals;
+
 template <typename T, size_t Dim, ndarray::storage_type ST>
 inline void initialize_array(ndarray::ndarray<T, Dim, ST>& array) {
   // Specify the engine and distribution.

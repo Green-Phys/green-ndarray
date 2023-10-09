@@ -20,6 +20,7 @@ void test_const_array(ndarray::ndarray<double, 5>& arr1, const ndarray::ndarray<
 TEST_CASE("NDArrayTest") {
   SECTION("Init") {
     ndarray::ndarray<double, 5> array(1, 2, 3, 4, 5);
+    ndarray::ndarray<double, 5> default_array;
     REQUIRE(array.size() == 1 * 2 * 3 * 4 * 5);
     REQUIRE(array.strides()[0] == 120);
     REQUIRE(array.strides()[1] == 60);
@@ -180,16 +181,23 @@ TEST_CASE("NDArrayTest") {
 
   SECTION("Reshape") {
     ndarray::ndarray<double, 5> array(1, 2, 3, 4, 5);
+    ndarray::ndarray<double, 4> array2(2, 3, 4, 5);
     initialize_array(array);
     std::vector<size_t>         shape{1, 2, 30, 2};
     std::vector<size_t>         strides{120, 60, 2, 1};
-    ndarray::ndarray<double, 4> reshaped_array = array.reshape(1, 2, 30, 2);
+    std::array<size_t, 6>       shape_arr{1, 1, 2, 3, 4, 5};
+    ndarray::ndarray<double, 4> reshaped_array  = array.reshape(1, 2, 30, 2);
+    ndarray::ndarray<double, 6> reshaped_array2 = array.reshape(shape_arr);
     REQUIRE(std::equal(shape.begin(), shape.end(), reshaped_array.shape().begin()));
+    REQUIRE(std::equal(shape_arr.begin(), shape_arr.end(), reshaped_array2.shape().begin()));
     REQUIRE(std::equal(strides.begin(), strides.end(), reshaped_array.strides().begin()));
+    REQUIRE_THROWS(array.reshape(shape));
+    auto reshaped_array3 = array2.reshape(shape);
+    REQUIRE(std::equal(shape.begin(), shape.end(), reshaped_array3.shape().begin()));
   }
 
   SECTION("RangeLoop") {
-    ndarray::ndarray<double, 5> array(50, 20, 3, 4);
+    ndarray::ndarray<double, 5> array(50, 20, 3, 4, 1);
     array.set_value(2.0);
     for (auto v : array) {
       REQUIRE(std::abs(v - 2.0) < 1e-12);
