@@ -51,6 +51,19 @@ namespace green::ndarray {
   }
 
   template <typename T1, typename T2, size_t Dim, storage_type ST, storage_type ST2>
+  std::enable_if_t<std::is_convertible<T2, T1>::value, ndarray<T1, Dim, ST>>&& operator+=(ndarray<T1, Dim, ST>&&       first,
+                                                                                          const ndarray<T2, Dim, ST2>& second) {
+#ifndef NDEBUG
+    if (!std::equal(first.shape().begin(), first.shape().end(), second.shape().begin())) {
+      throw std::runtime_error("Arrays size is miss matched.");
+    }
+#endif
+    std::transform(first.begin(), first.end(), second.begin(), first.begin(),
+                   [&](const T1 f, const T2 s) { return T1(f) + T1(s); });
+    return std::move(first);
+  }
+
+  template <typename T1, typename T2, size_t Dim, storage_type ST, storage_type ST2>
   std::enable_if_t<std::is_convertible<T2, T1>::value, ndarray<T1, Dim, ST>>& operator-=(ndarray<T1, Dim, ST>&        first,
                                                                                          const ndarray<T2, Dim, ST2>& second) {
 #ifndef NDEBUG
@@ -61,6 +74,19 @@ namespace green::ndarray {
     std::transform(first.begin(), first.end(), second.begin(), first.begin(),
                    [&](const T1 f, const T2 s) { return T1(f) - T1(s); });
     return first;
+  }
+
+  template <typename T1, typename T2, size_t Dim, storage_type ST, storage_type ST2>
+  std::enable_if_t<std::is_convertible<T2, T1>::value, ndarray<T1, Dim, ST>>&& operator-=(ndarray<T1, Dim, ST>&&       first,
+                                                                                          const ndarray<T2, Dim, ST2>& second) {
+#ifndef NDEBUG
+    if (!std::equal(first.shape().begin(), first.shape().end(), second.shape().begin())) {
+      throw std::runtime_error("Arrays size is miss matched.");
+    }
+#endif
+    std::transform(first.begin(), first.end(), second.begin(), first.begin(),
+                   [&](const T1 f, const T2 s) { return T1(f) - T1(s); });
+    return std::move(first);
   }
 
   // Inplace operations with scalars

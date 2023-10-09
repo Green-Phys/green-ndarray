@@ -42,6 +42,12 @@ TEST_CASE("NDArrayMathTest") {
     arr3 -= arr4;
     arr5 -= arr6;
     REQUIRE(std::abs(arr3(1, 2) - arr5(1, 2)) < 1e-12);
+
+    ndarray::ndarray<double, 2> arr3_c = arr3.copy();
+    ndarray::ndarray<double, 2> arr4_c = arr4.copy();
+    arr1(0, 1) += arr2(0, 0) * 1.0;
+    arr3_c += arr4_c;
+    REQUIRE(std::equal(arr3_c.begin(), arr3_c.end(), arr3.begin(), [](double a, double b) {return std::abs(a-b)<1e-12;}));
   }
 
   SECTION("InplaceMathWithScalars") {
