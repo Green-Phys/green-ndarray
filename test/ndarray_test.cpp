@@ -46,12 +46,18 @@ TEST_CASE("NDArrayTest") {
   SECTION("Init NULL Array and assign new reference") {
     std::array<size_t, 4>                                  shape{2, 2, 1, 1};
     std::vector<double>                                    data{1, 2, 30, 2};
-    ndarray::ndarray<double, 4, ndarray::REFERENCE_MEMORY> array(nullptr, shape);
-    array.set_ref(data.data());
-    REQUIRE(array(0, 0, 0, 0) == 1);
-    REQUIRE(array(0, 1, 0, 0) == 2);
-    REQUIRE(array(1, 0, 0, 0) == 30);
-    REQUIRE(array(1, 1, 0, 0) == 2);
+    ndarray::ndarray<double, 4, ndarray::REFERENCE_MEMORY> array_ref(nullptr, shape);
+    ndarray::ndarray<double, 4>                            array(shape);
+    ndarray::ndarray<double, 4, ndarray::REFERENCE_MEMORY> array_ref2(nullptr, 2, 2, 1, 1);
+    array_ref.set_ref(data.data());
+    array_ref2.set_ref(array.data());
+    initialize_array(array_ref2);
+    REQUIRE(array_ref(0, 0, 0, 0) == 1);
+    REQUIRE(array_ref(0, 1, 0, 0) == 2);
+    REQUIRE(array_ref(1, 0, 0, 0) == 30);
+    REQUIRE(array_ref(1, 1, 0, 0) == 2);
+    REQUIRE(
+        std::equal(array.begin(), array.end(), array_ref2.begin(), [](double a, double b) { return std::abs(a - b) < 1e-12; }));
   }
 
   SECTION("Slice") {
