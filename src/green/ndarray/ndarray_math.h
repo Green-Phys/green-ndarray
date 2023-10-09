@@ -123,35 +123,26 @@ namespace green::ndarray {
   };
 
   // Binary operations with scalars
-  template <typename T1, typename T2, size_t Dim, storage_type ST>
-  std::enable_if_t<is_scalar_v<T2>, ndarray<std::common_type_t<T1, T2>, Dim>> operator+(const ndarray<T1, Dim, ST>& first,
-                                                                                        T2                          second) {
-    using result_t = std::common_type_t<T1, T2>;
-    ndarray<result_t, Dim> result(first.shape());
-    std::transform(first.begin(), first.end(), result.begin(), [&](const T1 f) { return result_t(f) + result_t(second); });
-    return result;
-  };
-
-  template <typename T1, typename T2, size_t Dim, storage_type ST>
-  std::enable_if_t<is_scalar_v<T1>, ndarray<std::common_type_t<T1, T2>, Dim>> operator+(T1                          first,
-                                                                                        const ndarray<T2, Dim, ST>& second) {
-    return second + first;
+#define MATH_OP_WITH_SCALAR(OP)                                                                                                 \
+  template <typename T1, typename T2, size_t Dim, storage_type ST>                                                              \
+  std::enable_if_t<is_scalar_v<T2>, ndarray<std::common_type_t<T1, T2>, Dim>> operator OP(const ndarray<T1, Dim, ST>& first,    \
+                                                                                          T2                          second) { \
+    using result_t = std::common_type_t<T1, T2>;                                                                                \
+    ndarray<result_t, Dim> result(first.shape());                                                                               \
+    std::transform(first.begin(), first.end(), result.begin(), [&](const T1 f) { return result_t(f) OP result_t(second); });    \
+    return result;                                                                                                              \
+  };                                                                                                                            \
+                                                                                                                                \
+  template <typename T1, typename T2, size_t Dim, storage_type ST>                                                              \
+  std::enable_if_t<is_scalar_v<T1>, ndarray<std::common_type_t<T1, T2>, Dim>> operator OP(T1                          first,    \
+                                                                                          const ndarray<T2, Dim, ST>& second) { \
+    return second OP first;                                                                                                     \
   }
 
-  template <typename T1, typename T2, size_t Dim, storage_type ST>
-  std::enable_if_t<is_scalar_v<T2>, ndarray<std::common_type_t<T1, T2>, Dim>> operator-(const ndarray<T1, Dim, ST>& first,
-                                                                                        T2                          second) {
-    using result_t = std::common_type_t<T1, T2>;
-    ndarray<result_t, Dim> result(first.shape());
-    std::transform(first.begin(), first.end(), result.begin(), [&](const T1 f) { return result_t(f) - result_t(second); });
-    return result;
-  };
-
-  template <typename T1, typename T2, size_t Dim, storage_type ST>
-  typename std::enable_if<is_scalar_v<T1>, ndarray<std::common_type_t<T1, T2>, Dim>>::type operator-(
-      T1 first, const ndarray<T2, Dim, ST>& second) {
-    return second - first;
-  }
+  MATH_OP_WITH_SCALAR(+)
+  MATH_OP_WITH_SCALAR(-)
+  MATH_OP_WITH_SCALAR(*)
+  MATH_OP_WITH_SCALAR(/)
 
   // Unary operations
 
