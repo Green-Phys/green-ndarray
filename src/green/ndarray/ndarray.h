@@ -52,7 +52,7 @@ namespace green::ndarray {
      * @param[in] inds are after first dimensions.
      */
     template <typename... Indices>
-    explicit ndarray(size_t d1, Indices... inds) :
+    ndarray(size_t d1, Indices... inds) :
         ndarray(std::array<size_t, sizeof...(inds) + 1>{
             {d1, size_t(inds)...}
     }) {}

@@ -28,6 +28,17 @@ TEST_CASE("NDArrayTest") {
     REQUIRE(array.shape()[0] == 1);
     REQUIRE(array.shape()[1] == 2);
     REQUIRE(array.shape()[3] == 4);
+    ndarray::ndarray<double, 5> array_from_list{1, 2, 3, 4, 5};
+    ndarray::ndarray<double, 5> array_from_list_2[2]{
+        {1, 2, 3, 4, 5},
+        {3, 4, 5, 6, 7}
+    };
+    REQUIRE(array_from_list.shape()[0] == 1);
+    REQUIRE(array_from_list.shape()[1] == 2);
+    REQUIRE(array_from_list.shape()[3] == 4);
+    REQUIRE(array_from_list_2[1].shape()[0] == 3);
+    REQUIRE(array_from_list_2[1].shape()[1] == 4);
+    REQUIRE(array_from_list_2[1].shape()[3] == 6);
   }
 
   SECTION("Init With Vector") {
