@@ -16,7 +16,7 @@
 #include <string>
 #include <vector>
 
-#include "string_utils.h"
+#include "storage.h"
 
 namespace green::ndarray {
 
@@ -30,9 +30,8 @@ namespace green::ndarray {
   using is_scalar = std::integral_constant<bool, std::is_arithmetic<T>::value || is_complex<std::remove_const_t<T>>::value>;
   template <typename T>
   constexpr bool is_scalar_v = is_scalar<T>::value;
-  enum storage_type { OWN_MEMORY, REFERENCE_MEMORY };
 
-  template <typename T, size_t Dim, storage_type ST = OWN_MEMORY>
+  template <typename T, size_t Dim>
   struct ndarray {
     static_assert(is_scalar<T>::value, "ndarray element type should be of a scalar type");
 
@@ -64,12 +63,12 @@ namespace green::ndarray {
      */
     explicit ndarray(const std::array<size_t, Dim>& shape) :
         shape_(get_shape(shape)), strides_(strides_for_shape(shape)), size_(size_for_shape(shape)), offset_(0),
-        storage_(new T[size_], std::default_delete<T[]>()) {
+        storage_(sizeof(T)*size_) {
       set_value(0.0);
     }
     explicit ndarray(const std::vector<size_t>& shape) :
         shape_(get_shape(shape)), strides_(strides_for_shape(shape)), size_(size_for_shape(shape)), offset_(0),
-        storage_(new T[size_], std::default_delete<T[]>()) {
+        storage_(sizeof(T)*size_) {
       set_value(0.0);
     }
 
@@ -92,8 +91,7 @@ namespace green::ndarray {
     template <typename shape_type>
     explicit ndarray(T* data, const shape_type& shape) :
         shape_(get_shape(shape)), strides_(strides_for_shape(shape)), size_(size_for_shape(shape)), offset_(0),
-        storage_(data, [](T*) {}) {
-      static_assert(ST == REFERENCE_MEMORY);
+        storage_(data, size_) {
       if (data) set_value(0.0);
     }
 
@@ -105,7 +103,7 @@ namespace green::ndarray {
      * @param[in] inds are indices for slicing.
      */
     template <typename T2 = typename std::remove_const<T>::type, size_t Dim2, typename Ind, typename... Indices>
-    ndarray(const ndarray<T2, Dim2, ST>& ref, Ind ind1, Indices... inds) :
+    ndarray(const ndarray<T2, Dim2>& ref, Ind ind1, Indices... inds) :
         ndarray(ref, std::array<size_t, sizeof...(inds) + 1ul>{
                          {size_t(ind1), size_t(inds)...}
     }) {}
@@ -117,7 +115,7 @@ namespace green::ndarray {
      * @param[in] inds is array contains indices for slicing.
      */
     template <typename T2 = std::remove_const_t<T>, size_t Dim2, size_t D>
-    ndarray(const ndarray<T2, Dim2, ST>& ref, std::array<size_t, D>&& inds) :
+    ndarray(const ndarray<T2, Dim2>& ref, std::array<size_t, D>&& inds) :
         shape_(get_shape(ref.shape(), inds)), strides_(strides_for_shape(shape_)), size_(size_for_shape(shape_)),
         offset_(ref.offset() + compute_offset(ref.strides(), inds)), storage_(ref.storage()) {}
 
@@ -131,30 +129,27 @@ namespace green::ndarray {
      * @param rhs
      */
     template <typename T2 = std::remove_const_t<T>>
-    ndarray(const ndarray<T2, Dim, ST>& rhs) :
+    ndarray(const ndarray<T2, Dim>& rhs) :
         shape_(rhs.shape()), strides_(rhs.strides()), size_(rhs.size()), offset_(rhs.offset()), storage_(rhs.storage()) {}
 
     template <typename T2 = std::remove_const_t<T>>
-    ndarray(const ndarray<const T2, Dim, ST>& rhs) :
+    ndarray(const ndarray<const T2, Dim>& rhs) :
         shape_(rhs.shape()), strides_(rhs.strides()), size_(rhs.size()), offset_(rhs.offset()), storage_(rhs.storage()) {}
 
     template <size_t Dim2, typename = std::enable_if<Dim != Dim2>, typename T2 = std::remove_const_t<T>>
-    explicit ndarray(const ndarray<T2, Dim2, ST>& rhs) :
+    explicit ndarray(const ndarray<T2, Dim2>& rhs) :
         shape_(), strides_(), size_(rhs.size()), offset_(rhs.offset()), storage_(rhs.storage()) {}
 
     /**
-     * Assign scalar value to zero-dimension ndarray
+     * Assign scalar value to all elements
      *
      * @tparam Scalar - scalar type
      * @param rhs     - value of a scalar
      * @return current ndarray with updated value
      */
     template <typename Scalar, typename = typename std::enable_if<is_scalar<Scalar>::value>::type>
-    ndarray<T, Dim, ST>& operator=(const Scalar rhs) {
-#ifndef NDEBUG
-      check_zero_dimension();
-#endif
-      storage_.get()[offset_] = T(rhs);
+    ndarray<T, Dim>& operator=(const Scalar rhs) {
+      std::fill(begin(), end(), T(rhs));
       return *this;
     };
 
@@ -163,8 +158,8 @@ namespace green::ndarray {
      *
      * @return new array that is a full copy of current array
      */
-    ndarray<std::remove_const_t<T>, Dim, OWN_MEMORY> copy() const {
-      ndarray<std::remove_const_t<T>, Dim, OWN_MEMORY> ret(shape_);
+    ndarray<std::remove_const_t<T>, Dim> copy() const {
+      ndarray<std::remove_const_t<T>, Dim> ret(shape_);
       std::copy(begin(), end(), ret.begin());
       return ret;
     }
@@ -184,7 +179,7 @@ namespace green::ndarray {
       size_t num_of_inds = sizeof...(Indices);
       check_dimensions(num_of_inds);
 #endif
-      return &storage_.get()[offset_ + get_index(inds...)];
+      return &storage_.get<T>()[offset_ + get_index(inds...)];
     }
 
     /**
@@ -200,7 +195,7 @@ namespace green::ndarray {
       size_t num_of_inds = sizeof...(Indices);
       check_dimensions(num_of_inds);
 #endif
-      return &storage_.get()[offset_ + get_index(inds...)];
+      return &storage_.get<T>()[offset_ + get_index(inds...)];
     }
 
     /**
@@ -211,12 +206,12 @@ namespace green::ndarray {
      * @return sub-ndarray at `inds` indices
      */
     template <typename... Indices>
-    std::enable_if_t<sizeof...(Indices) < Dim, ndarray<T, Dim - sizeof...(Indices), ST>> operator()(Indices... inds) {
+    std::enable_if_t<sizeof...(Indices) < Dim, ndarray<T, Dim - sizeof...(Indices)>> operator()(Indices... inds) {
 #ifndef NDEBUG
       size_t num_of_inds = sizeof...(Indices);
       check_dimensions(shape_, num_of_inds);
 #endif
-      return ndarray<T, Dim - sizeof...(Indices), ST>(*this, inds...);
+      return ndarray<T, Dim - sizeof...(Indices)>(*this, inds...);
     };
 
     /**
@@ -227,17 +222,17 @@ namespace green::ndarray {
      * @return const sub-ndarray at `inds` coordinates
      */
     template <typename... Indices>
-    std::enable_if_t<sizeof...(Indices) < Dim, ndarray<const typename std::remove_const<T>::type, Dim - sizeof...(Indices), ST>>
+    std::enable_if_t<sizeof...(Indices) < Dim, ndarray<const typename std::remove_const<T>::type, Dim - sizeof...(Indices)>>
     operator()(Indices... inds) const {
 #ifndef NDEBUG
       size_t num_of_inds = sizeof...(Indices);
       check_dimensions(shape_, num_of_inds);
 #endif
-      return ndarray<const typename std::remove_const<T>::type, Dim - sizeof...(Indices), ST>(*this, inds...);
+      return ndarray<const typename std::remove_const<T>::type, Dim - sizeof...(Indices)>(*this, inds...);
     };
 
     /**
-     * Extract a scalar storage at given indices `inds`
+     * Extract a scalar storage_t at given indices `inds`
      *
      * TODO: add tests
      *
@@ -254,11 +249,11 @@ namespace green::ndarray {
                                  std::to_string(shape_.size()) + ")");
       }
 #endif
-      return storage_.get()[offset_ + get_index(inds...)];
+      return storage_.get<T>()[offset_ + get_index(inds...)];
     }
 
     /**
-     * Extract a scalar storage at a given indices `inds`
+     * Extract a scalar storage_t at a given indices `inds`
      *
      * @tparam Indices type of indices (should be convertible to size_t)
      * @param inds - coordinates of a sub-ndarray
@@ -273,7 +268,7 @@ namespace green::ndarray {
                                  std::to_string(shape_.size()) + ")");
       }
 #endif
-      return storage_.get()[offset_ + get_index(inds...)];
+      return storage_.get<T>()[offset_ + get_index(inds...)];
     }
 
     /**
@@ -308,17 +303,16 @@ namespace green::ndarray {
 #ifndef NDEBUG
       if (size_for_shape(new_shape) != size_) throw std::logic_error("new shape is not consistent with old one");
 #endif
-      ndarray<T, sizeof...(Indices) + 1, ST> result(*this);
+      ndarray<T, sizeof...(Indices) + 1> result(*this);
       return result.inplace_reshape(new_shape);
     }
 
-    template<size_t NewDim>
+    template <size_t NewDim>
     auto reshape(const std::array<size_t, NewDim>& new_shape) const {
 #ifndef NDEBUG
-      if (size_for_shape(new_shape) != size_)
-        throw std::logic_error("new shape is not consistent with old one");
+      if (size_for_shape(new_shape) != size_) throw std::logic_error("new shape is not consistent with old one");
 #endif
-      ndarray<T, NewDim, ST> result(*this);
+      ndarray<T, NewDim> result(*this);
       return result.inplace_reshape(new_shape);
     }
 
@@ -329,11 +323,11 @@ namespace green::ndarray {
       if (new_shape_v.size() != Dim || size_for_shape(new_shape) != size_)
         throw std::logic_error("new shape is not consistent with old one");
 #endif
-      ndarray<T, Dim, ST> result(*this);
+      ndarray<T, Dim> result(*this);
       return result.inplace_reshape(new_shape);
     }
 
-    ndarray<T, Dim, ST> inplace_reshape(const std::array<size_t, Dim>& shape) {
+    ndarray<T, Dim> inplace_reshape(const std::array<size_t, Dim>& shape) {
       if (offset_ != 0) {
         throw std::logic_error("new shape is not consistent with old one");
       }
@@ -350,49 +344,46 @@ namespace green::ndarray {
      * @param new_data pointer to a new data
      */
     void set_ref(T* new_data) {
-      if constexpr (ST == OWN_MEMORY)
-        throw std::runtime_error("Can not reset reference for array-managed data.");
-      else
-        storage_.reset(new_data, [](T*) {});
+      storage_.reset(new_data);
     }
 
     /**
      * @return constant pointer to the first element of the array
      */
-    const T*                       data() const { return storage_.get() + offset_; }
+    const T*                       data() const { return storage_.get<T>() + offset_; }
     /**
      * @return pointer to the first element of the array
      */
-    T*                             data() { return storage_.get() + offset_; }
+    T*                             data() { return storage_.get<T>() + offset_; }
 
     /**
      * Access to the first element for range-based loops
      * @return
      */
-    const T*                       begin() const { return storage_.get() + offset_; }
+    const T*                       begin() const { return storage_.get<T>() + offset_; }
     /**
      * Access to the first element for range-based loops
      * @return
      */
-    T*                             begin() { return storage_.get() + offset_; }
+    T*                             begin() { return storage_.get<T>() + offset_; }
 
     /**
      * Access to the last+1 element for range-based loops
      * @return
      */
-    const T*                       end() const { return storage_.get() + offset_ + size_; }
+    const T*                       end() const { return storage_.get<T>() + offset_ + size_; }
     /**
      * Access to the last+1 element for range-based loops
      * @return
      */
-    T*                             end() { return storage_.get() + offset_ + size_; }
+    T*                             end() { return storage_.get<T>() + offset_ + size_; }
 
     /**
      * @return shared_ptr object used to store underlying data
      */
-    const std::shared_ptr<T>&      storage() const { return storage_; }
+    const storage_t&      storage() const { return storage_; }
 
-    std::shared_ptr<T>&            storage() { return storage_; }
+    storage_t&            storage() { return storage_; }
 
     /**
      * @return total number of elements in the array
@@ -423,7 +414,7 @@ namespace green::ndarray {
     std::array<size_t, Dim> strides_;
     size_t                  size_{};
     size_t                  offset_{};
-    std::shared_ptr<T>      storage_;
+    storage_t               storage_;
 
     template <typename... Indices>
     size_t get_index(Indices... inds) const {

@@ -56,11 +56,11 @@ TEST_CASE("NDArrayTest") {
   }
 
   SECTION("Init NULL Array and assign new reference") {
-    std::array<size_t, 4>                                  shape{2, 2, 1, 1};
-    std::vector<double>                                    data{1, 2, 30, 2};
-    ndarray::ndarray<double, 4, ndarray::REFERENCE_MEMORY> array_ref(nullptr, shape);
-    ndarray::ndarray<double, 4>                            array(shape);
-    ndarray::ndarray<double, 4, ndarray::REFERENCE_MEMORY> array_ref2(nullptr, 2, 2, 1, 1);
+    std::array<size_t, 4>       shape{2, 2, 1, 1};
+    std::vector<double>         data{1, 2, 30, 2};
+    ndarray::ndarray<double, 4> array_ref(nullptr, shape);
+    ndarray::ndarray<double, 4> array(shape);
+    ndarray::ndarray<double, 4> array_ref2(nullptr, 2, 2, 1, 1);
     array_ref.set_ref(data.data());
     array_ref2.set_ref(array.data());
     initialize_array(array_ref2);
@@ -92,8 +92,8 @@ TEST_CASE("NDArrayTest") {
     REQUIRE(array3.shape()[0] == 4);
     REQUIRE(array3.shape()[1] == 5);
     // Slicing over array with Reference memoru
-    ndarray::ndarray<double, 5, green::ndarray::REFERENCE_MEMORY> array_ref(array.data(), 1, 2, 3, 4, 5);
-    auto array2_ref = array_ref(0, 1);
+    ndarray::ndarray<double, 5> array_ref(array.data(), 1, 2, 3, 4, 5);
+    auto                        array2_ref = array_ref(0, 1);
     REQUIRE(array2_ref.size() == 3 * 4 * 5);
     REQUIRE(array2_ref.strides()[0] == 20);
     REQUIRE(array2_ref.strides()[1] == 5);
@@ -115,7 +115,7 @@ TEST_CASE("NDArrayTest") {
 
     // take a slice
     ndarray::ndarray<double, 3> slice = array(0, 1);
-    // check that value in the slice points to the same storage
+    // check that value in the slice points to the same storage_t
     REQUIRE(std::abs(val - slice(2, 3, 4)) < 1e-12);
     // change value at the reference point
     val = 3.0;

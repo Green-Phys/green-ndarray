@@ -6,13 +6,14 @@
 #ifndef ALPS_NDARRAY_MATH_H
 #define ALPS_NDARRAY_MATH_H
 
-#include <green/ndarray/ndarray.h>
+#include "ndarray.h"
+#include "string_utils.h"
 
 namespace green::ndarray {
 
   namespace detail {
-    template <typename T, size_t Dim, storage_type ST>
-    ndarray<T, Dim> transpose_impl(const ndarray<T, Dim, ST>& array, const std::vector<size_t>& pattern) {
+    template <typename T, size_t Dim>
+    ndarray<T, Dim> transpose_impl(const ndarray<T, Dim>& array, const std::vector<size_t>& pattern) {
       std::vector<size_t> shape(array.shape().size());
       for (size_t i(0); i < array.shape().size(); ++i) {
         shape[pattern[i]] = array.shape()[i];
@@ -26,8 +27,8 @@ namespace green::ndarray {
           res /= array.shape()[array.dim() - ind - 1];
         }
         std::transform(indices.begin(), indices.end(), result.strides().begin(), indices.begin(), std::multiplies<size_t>());
-        size_t ind                  = std::accumulate(indices.begin(), indices.end(), size_t(0), std::plus<size_t>());
-        result.storage().get()[ind] = array.storage().get()[array.offset() + i];
+        size_t ind                     = std::accumulate(indices.begin(), indices.end(), size_t(0), std::plus<size_t>());
+        result.storage().template get<T>()[ind] = array.storage().template get<T>()[array.offset() + i];
       }
       return result;
     }
@@ -37,9 +38,9 @@ namespace green::ndarray {
 
   // inplace operators
 
-  template <typename T1, typename T2, size_t Dim, storage_type ST, storage_type ST2>
-  std::enable_if_t<std::is_convertible<T2, T1>::value, ndarray<T1, Dim, ST>>& operator+=(ndarray<T1, Dim, ST>&        first,
-                                                                                         const ndarray<T2, Dim, ST2>& second) {
+  template <typename T1, typename T2, size_t Dim>
+  std::enable_if_t<std::is_convertible<T2, T1>::value, ndarray<T1, Dim>>& operator+=(ndarray<T1, Dim>&       first,
+                                                                                     const ndarray<T2, Dim>& second) {
 #ifndef NDEBUG
     if (!std::equal(first.shape().begin(), first.shape().end(), second.shape().begin())) {
       throw std::runtime_error("Arrays size is miss matched.");
@@ -50,9 +51,9 @@ namespace green::ndarray {
     return first;
   }
 
-  template <typename T1, typename T2, size_t Dim, storage_type ST, storage_type ST2>
-  std::enable_if_t<std::is_convertible<T2, T1>::value, ndarray<T1, Dim, ST>>&& operator+=(ndarray<T1, Dim, ST>&&       first,
-                                                                                          const ndarray<T2, Dim, ST2>& second) {
+  template <typename T1, typename T2, size_t Dim>
+  std::enable_if_t<std::is_convertible<T2, T1>::value, ndarray<T1, Dim>>&& operator+=(ndarray<T1, Dim>&&      first,
+                                                                                      const ndarray<T2, Dim>& second) {
 #ifndef NDEBUG
     if (!std::equal(first.shape().begin(), first.shape().end(), second.shape().begin())) {
       throw std::runtime_error("Arrays size is miss matched.");
@@ -63,9 +64,9 @@ namespace green::ndarray {
     return std::move(first);
   }
 
-  template <typename T1, typename T2, size_t Dim, storage_type ST, storage_type ST2>
-  std::enable_if_t<std::is_convertible<T2, T1>::value, ndarray<T1, Dim, ST>>& operator-=(ndarray<T1, Dim, ST>&        first,
-                                                                                         const ndarray<T2, Dim, ST2>& second) {
+  template <typename T1, typename T2, size_t Dim>
+  std::enable_if_t<std::is_convertible<T2, T1>::value, ndarray<T1, Dim>>& operator-=(ndarray<T1, Dim>&       first,
+                                                                                     const ndarray<T2, Dim>& second) {
 #ifndef NDEBUG
     if (!std::equal(first.shape().begin(), first.shape().end(), second.shape().begin())) {
       throw std::runtime_error("Arrays size is miss matched.");
@@ -76,9 +77,9 @@ namespace green::ndarray {
     return first;
   }
 
-  template <typename T1, typename T2, size_t Dim, storage_type ST, storage_type ST2>
-  std::enable_if_t<std::is_convertible<T2, T1>::value, ndarray<T1, Dim, ST>>&& operator-=(ndarray<T1, Dim, ST>&&       first,
-                                                                                          const ndarray<T2, Dim, ST2>& second) {
+  template <typename T1, typename T2, size_t Dim>
+  std::enable_if_t<std::is_convertible<T2, T1>::value, ndarray<T1, Dim>>&& operator-=(ndarray<T1, Dim>&&      first,
+                                                                                      const ndarray<T2, Dim>& second) {
 #ifndef NDEBUG
     if (!std::equal(first.shape().begin(), first.shape().end(), second.shape().begin())) {
       throw std::runtime_error("Arrays size is miss matched.");
@@ -91,37 +92,22 @@ namespace green::ndarray {
 
   // Inplace operations with scalars
 
-  template <typename T1, typename T2, size_t Dim, storage_type ST>
-  std::enable_if_t<is_scalar_v<T2> && std::is_convertible_v<T2, T1>, ndarray<T1, Dim, ST>>& operator/=(
-      ndarray<T1, Dim, ST>& first, T2 second) {
-    std::transform(first.begin(), first.end(), first.begin(), [&](const T1 f) { return T1(f) / T1(second); });
-    return first;
+#define INPLACE_MATH_OP_WITH_SCALAR(IO, OP)                                                                                     \
+  template <typename T1, typename T2, size_t Dim>                                                                               \
+  std::enable_if_t<is_scalar_v<T2> && std::is_convertible_v<T2, T1>, ndarray<T1, Dim>>& operator IO(ndarray<T1, Dim>& first,    \
+                                                                                                    T2                second) { \
+    std::transform(first.begin(), first.end(), first.begin(), [&](const T1 f) { return T1(f) OP T1(second); });                 \
+    return first;                                                                                                               \
   }
 
-  template <typename T1, typename T2, size_t Dim, storage_type ST>
-  std::enable_if_t<is_scalar_v<T2> && std::is_convertible_v<T2, T1>, ndarray<T1, Dim, ST>>& operator*=(
-      ndarray<T1, Dim, ST>& first, T2 second) {
-    std::transform(first.begin(), first.end(), first.begin(), [&](const T1 f) { return T1(f) * T1(second); });
-    return first;
-  }
-
-  template <typename T1, typename T2, size_t Dim, storage_type ST>
-  std::enable_if_t<is_scalar_v<T2> && std::is_convertible_v<T2, T1>, ndarray<T1, Dim, ST>>& operator+=(
-      ndarray<T1, Dim, ST>& first, T2 second) {
-    std::transform(first.begin(), first.end(), first.begin(), [&](const T1 f) { return T1(f) + T1(second); });
-    return first;
-  }
-
-  template <typename T1, typename T2, size_t Dim, storage_type ST>
-  std::enable_if_t<is_scalar_v<T2> && std::is_convertible_v<T2, T1>, ndarray<T1, Dim, ST>>& operator-=(
-      ndarray<T1, Dim, ST>& first, T2 second) {
-    std::transform(first.begin(), first.end(), first.begin(), [&](const T1 f) { return T1(f) - T1(second); });
-    return first;
-  }
+  INPLACE_MATH_OP_WITH_SCALAR(+=, +)
+  INPLACE_MATH_OP_WITH_SCALAR(-=, -)
+  INPLACE_MATH_OP_WITH_SCALAR(*=, *)
+  INPLACE_MATH_OP_WITH_SCALAR(/=, /)
 
   // Binary operations with tensors
-  template <typename T1, typename T2, size_t Dim, storage_type ST, storage_type ST2>
-  ndarray<std::common_type_t<T1, T2>, Dim> operator+(const ndarray<T1, Dim, ST>& first, const ndarray<T2, Dim, ST2>& second) {
+  template <typename T1, typename T2, size_t Dim>
+  ndarray<std::common_type_t<T1, T2>, Dim> operator+(const ndarray<T1, Dim>& first, const ndarray<T2, Dim>& second) {
     using result_t = std::common_type_t<T1, T2>;
 #ifndef NDEBUG
     if (!std::equal(first.shape().begin(), first.shape().end(), second.shape().begin())) {
@@ -134,8 +120,8 @@ namespace green::ndarray {
     return result;
   };
 
-  template <typename T1, typename T2, size_t Dim, storage_type ST, storage_type ST2>
-  ndarray<std::common_type_t<T1, T2>, Dim> operator-(const ndarray<T1, Dim, ST>& first, const ndarray<T2, Dim, ST2>& second) {
+  template <typename T1, typename T2, size_t Dim>
+  ndarray<std::common_type_t<T1, T2>, Dim> operator-(const ndarray<T1, Dim>& first, const ndarray<T2, Dim>& second) {
     using result_t = std::common_type_t<T1, T2>;
 #ifndef NDEBUG
     if (!std::equal(first.shape().begin(), first.shape().end(), second.shape().begin())) {
@@ -149,20 +135,20 @@ namespace green::ndarray {
   };
 
   // Binary operations with scalars
-#define MATH_OP_WITH_SCALAR(OP)                                                                                                 \
-  template <typename T1, typename T2, size_t Dim, storage_type ST>                                                              \
-  std::enable_if_t<is_scalar_v<T2>, ndarray<std::common_type_t<T1, T2>, Dim>> operator OP(const ndarray<T1, Dim, ST>& first,    \
-                                                                                          T2                          second) { \
-    using result_t = std::common_type_t<T1, T2>;                                                                                \
-    ndarray<result_t, Dim> result(first.shape());                                                                               \
-    std::transform(first.begin(), first.end(), result.begin(), [&](const T1 f) { return result_t(f) OP result_t(second); });    \
-    return result;                                                                                                              \
-  };                                                                                                                            \
-                                                                                                                                \
-  template <typename T1, typename T2, size_t Dim, storage_type ST>                                                              \
-  std::enable_if_t<is_scalar_v<T1>, ndarray<std::common_type_t<T1, T2>, Dim>> operator OP(T1                          first,    \
-                                                                                          const ndarray<T2, Dim, ST>& second) { \
-    return second OP first;                                                                                                     \
+#define MATH_OP_WITH_SCALAR(OP)                                                                                              \
+  template <typename T1, typename T2, size_t Dim>                                                                            \
+  std::enable_if_t<is_scalar_v<T2>, ndarray<std::common_type_t<T1, T2>, Dim>> operator OP(const ndarray<T1, Dim>& first,     \
+                                                                                          T2                      second) {  \
+    using result_t = std::common_type_t<T1, T2>;                                                                             \
+    ndarray<result_t, Dim> result(first.shape());                                                                            \
+    std::transform(first.begin(), first.end(), result.begin(), [&](const T1 f) { return result_t(f) OP result_t(second); }); \
+    return result;                                                                                                           \
+  };                                                                                                                         \
+                                                                                                                             \
+  template <typename T1, typename T2, size_t Dim>                                                                            \
+  std::enable_if_t<is_scalar_v<T1>, ndarray<std::common_type_t<T1, T2>, Dim>> operator OP(T1                      first,     \
+                                                                                          const ndarray<T2, Dim>& second) {  \
+    return second OP first;                                                                                                  \
   }
 
   MATH_OP_WITH_SCALAR(+)
@@ -172,8 +158,8 @@ namespace green::ndarray {
 
   // Unary operations
 
-  template <typename T1, size_t Dim, storage_type ST>
-  ndarray<T1, Dim> operator-(const ndarray<T1, Dim, ST>& first) {
+  template <typename T1, size_t Dim>
+  ndarray<T1, Dim> operator-(const ndarray<T1, Dim>& first) {
     ndarray<T1, Dim> result(first.shape());
     std::transform(first.begin(), first.end(), result.begin(), [&](const T1 f) { return -f; });
     return result;
@@ -181,8 +167,8 @@ namespace green::ndarray {
 
   // Comparisons
 
-  template <typename T1, typename T2, size_t Dim, storage_type ST, storage_type ST2>
-  bool operator==(const ndarray<T1, Dim, ST>& lhs, const ndarray<T2, Dim, ST2>& rhs) {
+  template <typename T1, typename T2, size_t Dim>
+  bool operator==(const ndarray<T1, Dim>& lhs, const ndarray<T2, Dim>& rhs) {
     using result_t = std::common_type_t<T1, T2>;
 #ifndef NDEBUG
     if (!std::equal(lhs.shape().begin(), lhs.shape().end(), rhs.shape().begin())) {
@@ -193,8 +179,8 @@ namespace green::ndarray {
                       [](T1 l, T2 r) { return std::abs(result_t(l) - result_t(r)) < 1e-12; });
   };
 
-  template <typename T, size_t Dim, storage_type ST>
-  ndarray<T, Dim> transpose(const ndarray<T, Dim, ST>& array, const std::string& string_pattern) {
+  template <typename T, size_t Dim>
+  ndarray<T, Dim> transpose(const ndarray<T, Dim>& array, const std::string& string_pattern) {
     size_t find = string_pattern.find("->");
     if (find == std::string::npos) {
       throw std::runtime_error("Incorrect transpose_impl pattern.");
