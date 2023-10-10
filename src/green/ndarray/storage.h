@@ -6,6 +6,7 @@
 #ifndef NDARRAY_STORAGE_H
 #define NDARRAY_STORAGE_H
 
+#include <cassert>
 #include <cstdlib>
 #include <functional>
 
