@@ -29,7 +29,7 @@ namespace green::ndarray {
     if (count == 0) {
       std::free(blk.ptr);
       std::free(blk.count);
-      blk.ptr = nullptr;
+      blk.ptr   = nullptr;
       blk.count = nullptr;
     }
   }
@@ -38,7 +38,7 @@ namespace green::ndarray {
     if (!blk.count) return;
     size_t& count = *blk.count;
     --count;
-    if(count == 0) {
+    if (count == 0) {
       std::free(blk.count);
       blk.count = nullptr;
       return;
@@ -90,7 +90,9 @@ namespace green::ndarray {
     /**
      * Destructor will release possesion of the data. For self-managed data memory will be freed if needed.
      */
-    ~storage_t() { release_(data_); }
+    ~storage_t() {
+      if (release_) release_(data_);
+    }
 
     /**
      * Copy assignment
@@ -142,11 +144,11 @@ namespace green::ndarray {
     void reset(void* new_data, std::function<void(shared_mem_blk)> release_fun = noop_deallocation, size_t size = 0) {
       release_(data_);
       release_ = release_fun;
-      data_ = {new_data, size, new size_t(1)};
+      data_    = {new_data, size, new size_t(1)};
     }
 
     // next two functions are made public for test puropse
-    const shared_mem_blk&                      data() const { return data_; }
+    const shared_mem_blk&               data() const { return data_; }
     std::function<void(shared_mem_blk)> release() const { return release_; }
 
   private:
