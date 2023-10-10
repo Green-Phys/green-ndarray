@@ -9,6 +9,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <functional>
+#include <stdexcept>
 
 namespace green::ndarray {
   struct shared_mem_blk {
