@@ -217,6 +217,52 @@ TEST_CASE("NDArrayTest") {
     REQUIRE(std::equal(shape.begin(), shape.end(), reshaped_array3.shape().begin()));
   }
 
+  SECTION("Resize") {
+    ndarray::ndarray<double, 5> array(1, 2, 3, 4, 5);
+    std::vector<size_t>         shape{2, 1, 5, 3, 5};
+    std::array<size_t, 3>       shape_arr{1, 1, 2};
+    ndarray::ndarray<double, 5> resized_array  = array.resize(shape);
+    ndarray::ndarray<double, 4> resized_array2 = array.resize(12, 10, 5, 3);
+    ndarray::ndarray<double, 3> resized_array3 = array.resize(shape_arr);
+    REQUIRE(std::equal(shape.begin(), shape.end(), resized_array.shape().begin()));
+    REQUIRE(std::equal(shape_arr.begin(), shape_arr.end(), resized_array3.shape().begin()));
+    REQUIRE(resized_array2.shape().size() == 4);
+    REQUIRE(resized_array2.shape()[1] == 10);
+  }
+
+  SECTION("View") {
+    ndarray::ndarray<double, 5> darray(4, 2, 3, 4, 4);
+    initialize_array(darray);
+    ndarray::ndarray<std::complex<double>, 5> zarray = darray.view<std::complex<double>>();
+    REQUIRE(std::equal(darray.shape().begin(), darray.shape().end() - 1, zarray.shape().begin()));
+    REQUIRE(zarray.shape()[4] == darray.shape()[4] / 2);
+    REQUIRE(std::abs(zarray(0, 1, 2, 3, 0).real() - darray(0, 1, 2, 3, 0)) < 1e-12);
+    REQUIRE(std::abs(zarray(0, 1, 2, 3, 0).imag() - darray(0, 1, 2, 3, 1)) < 1e-12);
+    ndarray::ndarray<double, 5> darray2(1, 2, 3, 4, 5);
+    REQUIRE_THROWS(darray2.view<std::complex<double>>());
+    ndarray::ndarray<double, 4> darray3 = darray(1);
+    REQUIRE_NOTHROW(darray3.view<std::complex<double>>());
+    ndarray::ndarray<double, 4>               darray4 = darray(2);
+    ndarray::ndarray<std::complex<double>, 4> zarray2 = darray4.view<std::complex<double>>();
+    REQUIRE(std::abs(zarray2(1, 2, 3, 0).real() - darray4(1, 2, 3, 0)) < 1e-12);
+    REQUIRE(std::abs(zarray2(1, 2, 3, 0).imag() - darray4(1, 2, 3, 1)) < 1e-12);
+    ndarray::ndarray<double, 5> darray5 = zarray.view<double>();
+    REQUIRE(darray.shape() == darray5.shape());
+    REQUIRE(
+        std::equal(darray.begin(), darray.end(), darray5.begin(), [](double a, double b) { return std::abs(a - b) < 1e-12; }));
+  }
+
+  SECTION("Astype") {
+    ndarray::ndarray<double, 5> darray(4, 2, 3, 4, 4);
+    initialize_array(darray);
+    ndarray::ndarray<std::complex<double>, 5> zarray = darray.astype<std::complex<double>>();
+    REQUIRE(std::equal(darray.shape().begin(), darray.shape().end(), zarray.shape().begin()));
+    REQUIRE(std::equal(darray.shape().begin(), darray.shape().end(), zarray.shape().begin(),
+                       [](double a, const std::complex<double>& b) { return std::abs(a - b.real()) < 1e-12; }));
+    REQUIRE(std::equal(zarray.shape().begin(), zarray.shape().end(), zarray.shape().begin(),
+                       [](const std::complex<double>& a, const std::complex<double>& b) { return std::abs(a.imag()) < 1e-12; }));
+  }
+
   SECTION("RangeLoop") {
     ndarray::ndarray<double, 5> array(50, 20, 3, 4, 1);
     array.set_value(2.0);

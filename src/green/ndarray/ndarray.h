@@ -43,6 +43,9 @@ namespace green::ndarray {
       std::fill(strides_.begin(), strides_.end(), 0);
     }
 
+    ndarray(const std::array<size_t, Dim>& shape, const std::array<size_t, Dim> strides, size_t offset, storage_t storage) :
+        shape_(shape), strides_(strides), size_(size_for_shape(shape)), offset_(offset), storage_(std::move(storage)) {}
+
     /**
      * Constructor for initialization from dimensions (allocates memory for attribute storage_).
      *
@@ -63,12 +66,12 @@ namespace green::ndarray {
      */
     explicit ndarray(const std::array<size_t, Dim>& shape) :
         shape_(get_shape(shape)), strides_(strides_for_shape(shape)), size_(size_for_shape(shape)), offset_(0),
-        storage_(sizeof(T)*size_) {
+        storage_(sizeof(T) * size_) {
       set_value(0.0);
     }
     explicit ndarray(const std::vector<size_t>& shape) :
         shape_(get_shape(shape)), strides_(strides_for_shape(shape)), size_(size_for_shape(shape)), offset_(0),
-        storage_(sizeof(T)*size_) {
+        storage_(sizeof(T) * size_) {
       set_value(0.0);
     }
 
@@ -123,22 +126,57 @@ namespace green::ndarray {
      * Copy constructors
      */
 
+    ndarray(const ndarray<T, Dim>& rhs) :
+        shape_(rhs.shape()), strides_(rhs.strides()), size_(rhs.size()), offset_(rhs.offset()), storage_(rhs.storage()) {}
+
     /**
      *
      * @tparam T2
      * @param rhs
      */
     template <typename T2 = std::remove_const_t<T>>
-    ndarray(const ndarray<T2, Dim>& rhs) :
+    ndarray(const ndarray<std::enable_if_t<!std::is_same_v<T, T2>, T2>, Dim>& rhs) :
         shape_(rhs.shape()), strides_(rhs.strides()), size_(rhs.size()), offset_(rhs.offset()), storage_(rhs.storage()) {}
 
     template <typename T2 = std::remove_const_t<T>>
-    ndarray(const ndarray<const T2, Dim>& rhs) :
+    ndarray(const ndarray<const std::enable_if_t<std::is_same_v<T, T2>, T2>, Dim>& rhs) :
         shape_(rhs.shape()), strides_(rhs.strides()), size_(rhs.size()), offset_(rhs.offset()), storage_(rhs.storage()) {}
 
     template <size_t Dim2, typename = std::enable_if<Dim != Dim2>, typename T2 = std::remove_const_t<T>>
     explicit ndarray(const ndarray<T2, Dim2>& rhs) :
         shape_(), strides_(), size_(rhs.size()), offset_(rhs.offset()), storage_(rhs.storage()) {}
+
+    /*
+     * Move constructor
+     */
+
+    ndarray(ndarray<T, Dim>&& rhs) :
+        shape_(rhs.shape_), strides_(rhs.strides_), size_(rhs.size_), offset_(rhs.offset_), storage_(rhs.storage_) {
+      rhs.storage_ = storage_t();
+    }
+
+    /*
+     * Assignment operators
+     */
+
+    ndarray<T, Dim>& operator=(const ndarray<T, Dim>& rhs) {
+      shape_   = rhs.shape_;
+      strides_ = rhs.strides_;
+      size_    = rhs.size_;
+      offset_  = rhs.offset_;
+      storage_ = rhs.storage_;
+      return *this;
+    }
+
+    ndarray<T, Dim>& operator=(ndarray<T, Dim>&& rhs) noexcept {
+      shape_       = std::move(rhs.shape_);
+      strides_     = std::move(rhs.strides_);
+      size_        = rhs.size_;
+      offset_      = rhs.offset_;
+      storage_     = std::move(rhs.storage_);
+      rhs.storage_ = storage_t();
+      return *this;
+    }
 
     /**
      * Assign scalar value to all elements
@@ -336,6 +374,62 @@ namespace green::ndarray {
       return *this;
     }
 
+    template <typename... Indices>
+    auto resize(size_t ind1, Indices... shape_inds) const {
+      std::array<size_t, sizeof...(Indices) + 1> new_shape{
+          {ind1, size_t(shape_inds)...}
+      };
+      return resize(new_shape);
+    }
+
+    template <size_t NewDim>
+    auto resize(const std::array<size_t, NewDim>& new_shape) const {
+      return ndarray<T, NewDim>(new_shape);
+    }
+
+    auto resize(const std::vector<size_t>& new_shape_v) const {
+      std::array<size_t, Dim> new_shape;
+      std::copy(new_shape_v.begin(), new_shape_v.end(), new_shape.begin());
+#ifndef NDEBUG
+      if (new_shape_v.size() != Dim) throw std::logic_error("new shape dimensions are not consistent with old one");
+#endif
+      ndarray<T, Dim> result(new_shape);
+      return result;
+    }
+
+    // Type change
+
+    template <typename T2>
+    auto view() {
+      if (sizeof(T) < sizeof(T2) and (shape_[Dim - 1] % (sizeof(T2) / sizeof(T))) != 0) {
+        throw std::runtime_error("Array");
+      }
+      if (sizeof(T) < sizeof(T2) and (offset_ % (sizeof(T2) / sizeof(T))) != 0 ) {
+        throw std::runtime_error("Array");
+      }
+      std::array<size_t, Dim> new_shape(shape_);
+      new_shape[Dim - 1] = (shape_[Dim - 1] * sizeof(T)) / sizeof(T2);
+      size_t new_offset = (offset_ * sizeof(T)) / sizeof(T2);
+      ndarray<T2, Dim> result(new_shape, strides_for_shape(new_shape), new_offset, storage_);
+      return result;
+    }
+
+    template <typename T2>
+    auto astype() {
+
+      std::array<size_t, Dim> new_shape(shape_);
+      ndarray<T2, Dim> result(new_shape);
+      std::transform(begin(), end(), result.begin(), [] (const T&a) {
+        if constexpr (is_complex_v<T> && !is_complex_v<T2>) {
+          std::cerr<<"Imaginary part will be discarded when converting from complex into real";
+          return T2(a.real());
+        } else {
+          return T2(a);
+        }
+      });
+      return result;
+    }
+
     // Data accessors
 
     /**
@@ -343,9 +437,7 @@ namespace green::ndarray {
      *
      * @param new_data pointer to a new data
      */
-    void set_ref(T* new_data) {
-      storage_.reset(new_data);
-    }
+    void                           set_ref(T* new_data) { storage_.reset(new_data); }
 
     /**
      * @return constant pointer to the first element of the array
@@ -381,9 +473,9 @@ namespace green::ndarray {
     /**
      * @return shared_ptr object used to store underlying data
      */
-    const storage_t&      storage() const { return storage_; }
+    const storage_t&               storage() const { return storage_; }
 
-    storage_t&            storage() { return storage_; }
+    storage_t&                     storage() { return storage_; }
 
     /**
      * @return total number of elements in the array
@@ -399,6 +491,7 @@ namespace green::ndarray {
      * @return std::vector that contains the shape of the array
      */
     const std::array<size_t, Dim>& shape() const { return shape_; }
+    std::array<size_t, Dim>&       shape() { return shape_; }
     /**
      * @return std::vector that contains strides of the array
      */
