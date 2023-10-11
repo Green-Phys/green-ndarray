@@ -399,35 +399,73 @@ namespace green::ndarray {
 
     // Type change
 
+    /**
+     * View array memory in different type. One of the possible use cases is viewing floating point array as a complex array
+     *
+     * @tparam T2 new type
+     * @return new multidimensional array that reinterpret memory into type T2
+     */
     template <typename T2>
     auto view() {
       if (sizeof(T) < sizeof(T2) and (shape_[Dim - 1] % (sizeof(T2) / sizeof(T))) != 0) {
-        throw std::runtime_error("Array");
+        throw std::runtime_error(
+            "When changing to a larger type, its size must be a divisor of the total size in bytes of the last axis of the "
+            "array.");
       }
-      if (sizeof(T) < sizeof(T2) and (offset_ % (sizeof(T2) / sizeof(T))) != 0 ) {
+      if (sizeof(T) < sizeof(T2) and (offset_ % (sizeof(T2) / sizeof(T))) != 0) {
         throw std::runtime_error("Array");
       }
       std::array<size_t, Dim> new_shape(shape_);
-      new_shape[Dim - 1] = (shape_[Dim - 1] * sizeof(T)) / sizeof(T2);
-      size_t new_offset = (offset_ * sizeof(T)) / sizeof(T2);
+      new_shape[Dim - 1]          = (shape_[Dim - 1] * sizeof(T)) / sizeof(T2);
+      size_t           new_offset = (offset_ * sizeof(T)) / sizeof(T2);
       ndarray<T2, Dim> result(new_shape, strides_for_shape(new_shape), new_offset, storage_);
       return result;
     }
 
+    /**
+     * Create a copy of the array with new datatype
+     *
+     * @tparam T2 - new type
+     * @return copy of the current array casted into a new type
+     */
     template <typename T2>
     auto astype() {
-
       std::array<size_t, Dim> new_shape(shape_);
-      ndarray<T2, Dim> result(new_shape);
-      std::transform(begin(), end(), result.begin(), [] (const T&a) {
+      ndarray<T2, Dim>        result(new_shape);
+      std::transform(begin(), end(), result.begin(), [](const T& a) {
         if constexpr (is_complex_v<T> && !is_complex_v<T2>) {
-          std::cerr<<"Imaginary part will be discarded when converting from complex into real";
+          std::cerr << "Imaginary part will be discarded when converting from complex into real";
           return T2(a.real());
         } else {
           return T2(a);
         }
       });
       return result;
+    }
+
+    /**
+     * Fill current array with values from `rhs` array with appropriate data conversion
+     *
+     * @tparam T2 - `rhs` array type
+     * @param rhs - source array
+     * @return current array with values obtained from source array
+     */
+    template <typename T2>
+    ndarray<T, Dim> operator<<(const ndarray<T2, Dim>& rhs) {
+#ifndef NDEBUG
+      if (shape_ != rhs.shape()) {
+        throw std::runtime_error("Shapes of source and destination arrays should be the same");
+      }
+#endif
+      std::transform(rhs.begin(), rhs.end(), begin(), [](const T& a) {
+        if constexpr (is_complex_v<T2> && !is_complex_v<T>) {
+          std::cerr << "Imaginary part will be discarded when converting from complex into real";
+          return T(a.real());
+        } else {
+          return T(a);
+        }
+      });
+      return *this;
     }
 
     // Data accessors

@@ -263,6 +263,19 @@ TEST_CASE("NDArrayTest") {
                        [](const std::complex<double>& a, const std::complex<double>& b) { return std::abs(a.imag()) < 1e-12; }));
   }
 
+  SECTION("Stream array") {
+    ndarray::ndarray<double, 5> darray(4, 2, 3, 4, 4);
+    initialize_array(darray);
+    ndarray::ndarray<std::complex<double>, 5> zarray(4, 2, 3, 4, 4);
+    ndarray::ndarray<std::complex<double>, 5> zarray2(1, 2, 3, 4, 4);
+    zarray << darray;
+    REQUIRE_THROWS(zarray2 << darray);
+    REQUIRE(std::equal(darray.shape().begin(), darray.shape().end(), zarray.shape().begin(),
+                       [](double a, const std::complex<double>& b) { return std::abs(a - b.real()) < 1e-12; }));
+    REQUIRE(std::equal(zarray.shape().begin(), zarray.shape().end(), zarray.shape().begin(),
+                       [](const std::complex<double>& a, const std::complex<double>& b) { return std::abs(a.imag()) < 1e-12; }));
+  }
+
   SECTION("RangeLoop") {
     ndarray::ndarray<double, 5> array(50, 20, 3, 4, 1);
     array.set_value(2.0);
