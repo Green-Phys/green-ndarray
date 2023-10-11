@@ -153,7 +153,8 @@ namespace green::ndarray {
      */
 
     ndarray(ndarray<T, Dim>&& rhs) :
-        shape_(rhs.shape_), strides_(rhs.strides_), size_(rhs.size_), offset_(rhs.offset_), storage_(rhs.storage_) {
+        shape_(std::move(rhs.shape_)), strides_(std::move(rhs.strides_)), size_(rhs.size_), offset_(rhs.offset_),
+        storage_(std::move(rhs.storage_)) {
       rhs.storage_ = storage_t();
     }
 

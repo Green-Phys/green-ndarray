@@ -23,12 +23,9 @@ namespace green::ndarray {
     size_t& count = *blk.count;
     --count;
     assert(count >= 0);
-    if (blk.ptr == nullptr) {
-      return;
-    }
     if (count == 0) {
-      std::free(blk.ptr);
-      std::free(blk.count);
+      if (blk.ptr) std::free(blk.ptr);
+      if (blk.count) std::free(blk.count);
       blk.ptr   = nullptr;
       blk.count = nullptr;
     }
@@ -101,8 +98,11 @@ namespace green::ndarray {
      * @return storage that point at the exact same memory as `rhs`
      */
     storage_t& operator=(const storage_t& rhs) {
+      if(release_)release_(data_);
       data_ = rhs.data_;
-      ++(*data_.count);
+      if(data_.count) {
+        ++(*data_.count);
+      }
       release_ = rhs.release_;
       return *this;
     }
@@ -113,6 +113,7 @@ namespace green::ndarray {
      * @return storage that point at the exact same memory as `rhs`
      */
     storage_t& operator=(storage_t&& rhs) {
+      if(release_)release_(data_);
       data_           = std::move(rhs.data_);
       release_        = std::move(rhs.release_);
       rhs.data_.ptr   = nullptr;

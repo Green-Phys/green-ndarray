@@ -41,6 +41,48 @@ TEST_CASE("NDArrayTest") {
     REQUIRE(array_from_list_2[1].shape()[3] == 6);
   }
 
+  SECTION("Copy Constructor") {
+    ndarray::ndarray<double, 3> x(1,2,3);
+    initialize_array(x);
+    REQUIRE(*x.storage().data().count == 1);
+    {
+      ndarray::ndarray<double, 3> y(x);
+      REQUIRE(*y.storage().data().count == 2);
+    }
+    REQUIRE(*x.storage().data().count == 1);
+  }
+
+  SECTION("Copy Assignment") {
+    ndarray::ndarray<double, 3> x(1,2,3);
+    initialize_array(x);
+    REQUIRE(*x.storage().data().count == 1);
+    {
+      ndarray::ndarray<double, 3> y(3,4,5);
+      ndarray::ndarray<double, 3> z(y);
+      REQUIRE(*y.storage().data().count == 2);
+      y = x;
+      REQUIRE(*y.storage().data().count == 2);
+      REQUIRE(*z.storage().data().count == 1);
+    }
+    REQUIRE(*x.storage().data().count == 1);
+  }
+
+  SECTION("Move Assignment") {
+    ndarray::ndarray<double, 3> x(1,2,3);
+    initialize_array(x);
+    REQUIRE(*x.storage().data().count == 1);
+    {
+      auto f_move = [] (ndarray::ndarray<double, 3> a) {return std::move(a);};
+      ndarray::ndarray<double, 3> y(3,4,5);
+      ndarray::ndarray<double, 3> z(y);
+      REQUIRE(*y.storage().data().count == 2);
+      y = f_move(ndarray::ndarray<double, 3>(1,2,3));
+      REQUIRE(*y.storage().data().count == 1);
+      REQUIRE(*z.storage().data().count == 1);
+    }
+    REQUIRE(*x.storage().data().count == 1);
+  }
+
   SECTION("Init With Vector") {
     std::vector<size_t>         shape{1, 2, 30, 2};
     ndarray::ndarray<double, 4> array(shape);

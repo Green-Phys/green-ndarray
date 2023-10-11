@@ -55,6 +55,29 @@ TEST_CASE("Storage") {
     REQUIRE(*st5.data().count == 1);
     REQUIRE(st5.data().size == 20);
   }
+  SECTION("Copy Assignment") {
+    gn::storage_t st1(100);
+    gn::storage_t st2(200);
+    {
+      gn::storage_t st3(st1);
+      REQUIRE(*st3.data().count == 2);
+      st1 = st2;
+      REQUIRE(*st3.data().count == 1);
+    }
+  }
+
+  SECTION("Move Assignment") {
+    gn::storage_t st1(100);
+    {
+      auto f_move = [] (gn::storage_t st) {return st;};
+      gn::storage_t st3(st1);
+      REQUIRE(*st3.data().count == 2);
+      st1 = f_move(gn::storage_t(100));
+      REQUIRE(*st3.data().count == 1);
+    }
+    REQUIRE(*st1.data().count == 1);
+  }
+
   SECTION("Create ref") {
     std::vector<double> x(100);
     gn::storage_t       st1(x.data());
