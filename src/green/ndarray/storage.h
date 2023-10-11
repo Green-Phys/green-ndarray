@@ -76,7 +76,7 @@ namespace green::ndarray {
      * Move constructor
      * @param rhs - object to be moved
      */
-    storage_t(storage_t&& rhs) : data_(rhs.data_), release_(rhs.release_) {
+    storage_t(storage_t&& rhs)  noexcept : data_(rhs.data_), release_(rhs.release_) {
       rhs.data_.ptr   = nullptr;
       rhs.data_.count = nullptr;
     }

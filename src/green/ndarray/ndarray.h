@@ -43,8 +43,10 @@ namespace green::ndarray {
       std::fill(strides_.begin(), strides_.end(), 0);
     }
 
-    ndarray(const std::array<size_t, Dim>& shape, const std::array<size_t, Dim> strides, size_t offset, storage_t storage) :
-        shape_(shape), strides_(strides), size_(size_for_shape(shape)), offset_(offset), storage_(std::move(storage)) {}
+    ndarray(const std::array<size_t, Dim>& shape, const std::array<size_t, Dim> strides, size_t offset,
+            const storage_t& storage) :
+        shape_(shape),
+        strides_(strides), size_(size_for_shape(shape)), offset_(offset), storage_(storage) {}
 
     /**
      * Constructor for initialization from dimensions (allocates memory for attribute storage_).
@@ -375,7 +377,7 @@ namespace green::ndarray {
     }
 
     template <typename... Indices>
-    auto resize(size_t ind1, Indices... shape_inds) const {
+    ndarray<T, sizeof...(Indices) + 1> resize(size_t ind1, Indices... shape_inds) const {
       std::array<size_t, sizeof...(Indices) + 1> new_shape{
           {ind1, size_t(shape_inds)...}
       };
@@ -383,11 +385,11 @@ namespace green::ndarray {
     }
 
     template <size_t NewDim>
-    auto resize(const std::array<size_t, NewDim>& new_shape) const {
+    ndarray<T, NewDim> resize(const std::array<size_t, NewDim>& new_shape) const {
       return ndarray<T, NewDim>(new_shape);
     }
 
-    auto resize(const std::vector<size_t>& new_shape_v) const {
+    ndarray<T, Dim> resize(const std::vector<size_t>& new_shape_v) const {
       std::array<size_t, Dim> new_shape;
       std::copy(new_shape_v.begin(), new_shape_v.end(), new_shape.begin());
 #ifndef NDEBUG
@@ -406,7 +408,7 @@ namespace green::ndarray {
      * @return new multidimensional array that reinterpret memory into type T2
      */
     template <typename T2>
-    auto view() {
+    ndarray<T2, Dim> view() {
       if (sizeof(T) < sizeof(T2) and (shape_[Dim - 1] % (sizeof(T2) / sizeof(T))) != 0) {
         throw std::runtime_error(
             "When changing to a larger type, its size must be a divisor of the total size in bytes of the last axis of the "
@@ -429,7 +431,7 @@ namespace green::ndarray {
      * @return copy of the current array casted into a new type
      */
     template <typename T2>
-    auto astype() {
+    ndarray<T2, Dim> astype() {
       std::array<size_t, Dim> new_shape(shape_);
       ndarray<T2, Dim>        result(new_shape);
       std::transform(begin(), end(), result.begin(), [](const T& a) {
