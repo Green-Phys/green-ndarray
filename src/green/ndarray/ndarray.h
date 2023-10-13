@@ -389,11 +389,11 @@ namespace green::ndarray {
       if (ref_check && *storage_.data().count > 1) {
         throw std::logic_error("can not resize array that is a reference to another array.");
       }
-      shape_        = new_shape;
-      strides_      = strides_for_shape(shape_);
-      size_t offset = 0;
-      size_t size   = size_for_shape(shape_);
-      storage_      = storage_t(sizeof(T) * size_);
+      shape_   = new_shape;
+      strides_ = strides_for_shape(shape_);
+      offset_  = 0;
+      size_    = size_for_shape(shape_);
+      storage_ = storage_t(sizeof(T) * size_);
     }
 
     void resize(const std::vector<size_t>& new_shape_v) {

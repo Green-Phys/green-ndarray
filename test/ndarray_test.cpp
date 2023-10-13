@@ -269,6 +269,7 @@ TEST_CASE("NDArrayTest") {
     array.resize(12, 10, 5, 3, 2);
     REQUIRE(array.shape().size() == 5);
     REQUIRE(array.shape()[1] == 10);
+    REQUIRE(array.size() == 3600);
     array.resize(shape_arr);
     REQUIRE(std::equal(shape_arr.begin(), shape_arr.end(), array.shape().begin()));
     REQUIRE_THROWS(array.resize(wrong_shape));
