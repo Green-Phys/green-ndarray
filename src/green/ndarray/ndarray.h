@@ -386,7 +386,7 @@ namespace green::ndarray {
     }
 
     void resize(const std::array<size_t, Dim>& new_shape, bool ref_check = true) {
-      if (ref_check && *storage_.data().count > 1) {
+      if (ref_check && storage_.data().count && *storage_.data().count > 1) {
         throw std::logic_error("can not resize array that is a reference to another array.");
       }
       shape_   = new_shape;

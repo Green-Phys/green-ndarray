@@ -261,11 +261,14 @@ TEST_CASE("NDArrayTest") {
 
   SECTION("Resize") {
     ndarray::ndarray<double, 5> array(1, 2, 3, 4, 5);
+    ndarray::ndarray<double, 5> empty_array;
     std::vector<size_t>         shape{2, 1, 5, 3, 5};
     std::vector<size_t>         wrong_shape{2, 1, 5, 3};
     std::array<size_t, 5>       shape_arr{1, 1, 2, 2, 1};
     array.resize(shape);
+    empty_array.resize(shape);
     REQUIRE(std::equal(shape.begin(), shape.end(), array.shape().begin()));
+    REQUIRE(std::equal(shape.begin(), shape.end(), empty_array.shape().begin()));
     array.resize(12, 10, 5, 3, 2);
     REQUIRE(array.shape().size() == 5);
     REQUIRE(array.shape()[1] == 10);
