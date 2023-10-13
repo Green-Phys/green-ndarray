@@ -368,7 +368,7 @@ namespace green::ndarray {
       return result.inplace_reshape(new_shape);
     }
 
-    ndarray<T, Dim> inplace_reshape(const std::array<size_t, Dim>& shape) {
+    ndarray<T, Dim>& inplace_reshape(const std::array<size_t, Dim>& shape) {
       if (offset_ != 0) {
         throw std::logic_error("new shape is not consistent with old one");
       }
@@ -377,27 +377,32 @@ namespace green::ndarray {
       return *this;
     }
 
-    template <typename... Indices>
-    ndarray<T, sizeof...(Indices) + 1> resize(size_t ind1, Indices... shape_inds) const {
+    template <typename... Indices, typename = std::enable_if_t<sizeof...(Indices) + 1 == Dim>>
+    void resize(size_t ind1, Indices... shape_inds) {
       std::array<size_t, sizeof...(Indices) + 1> new_shape{
           {ind1, size_t(shape_inds)...}
       };
       return resize(new_shape);
     }
 
-    template <size_t NewDim>
-    ndarray<T, NewDim> resize(const std::array<size_t, NewDim>& new_shape) const {
-      return ndarray<T, NewDim>(new_shape);
+    void resize(const std::array<size_t, Dim>& new_shape, bool ref_check = true) {
+      if (ref_check && *storage_.data().count > 1) {
+        throw std::logic_error("can not resize array that is a reference to another array.");
+      }
+      shape_        = new_shape;
+      strides_      = strides_for_shape(shape_);
+      size_t offset = 0;
+      size_t size   = size_for_shape(shape_);
+      storage_      = storage_t(sizeof(T) * size_);
     }
 
-    ndarray<T, Dim> resize(const std::vector<size_t>& new_shape_v) const {
-      std::array<size_t, Dim> new_shape;
-      std::copy(new_shape_v.begin(), new_shape_v.end(), new_shape.begin());
+    void resize(const std::vector<size_t>& new_shape_v) {
 #ifndef NDEBUG
       if (new_shape_v.size() != Dim) throw std::logic_error("new shape dimensions are not consistent with old one");
 #endif
-      ndarray<T, Dim> result(new_shape);
-      return result;
+      std::array<size_t, Dim> new_shape;
+      std::copy(new_shape_v.begin(), new_shape_v.end(), new_shape.begin());
+      resize(new_shape);
     }
 
     // Type change

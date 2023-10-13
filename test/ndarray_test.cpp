@@ -42,7 +42,7 @@ TEST_CASE("NDArrayTest") {
   }
 
   SECTION("Copy Constructor") {
-    ndarray::ndarray<double, 3> x(1,2,3);
+    ndarray::ndarray<double, 3> x(1, 2, 3);
     initialize_array(x);
     REQUIRE(*x.storage().data().count == 1);
     {
@@ -53,11 +53,11 @@ TEST_CASE("NDArrayTest") {
   }
 
   SECTION("Copy Assignment") {
-    ndarray::ndarray<double, 3> x(1,2,3);
+    ndarray::ndarray<double, 3> x(1, 2, 3);
     initialize_array(x);
     REQUIRE(*x.storage().data().count == 1);
     {
-      ndarray::ndarray<double, 3> y(3,4,5);
+      ndarray::ndarray<double, 3> y(3, 4, 5);
       ndarray::ndarray<double, 3> z(y);
       REQUIRE(*y.storage().data().count == 2);
       y = x;
@@ -68,15 +68,15 @@ TEST_CASE("NDArrayTest") {
   }
 
   SECTION("Move Assignment") {
-    ndarray::ndarray<double, 3> x(1,2,3);
+    ndarray::ndarray<double, 3> x(1, 2, 3);
     initialize_array(x);
     REQUIRE(*x.storage().data().count == 1);
     {
-      auto f_move = [] (ndarray::ndarray<double, 3> a) {return std::move(a);};
-      ndarray::ndarray<double, 3> y(3,4,5);
+      auto                        f_move = [](ndarray::ndarray<double, 3> a) { return std::move(a); };
+      ndarray::ndarray<double, 3> y(3, 4, 5);
       ndarray::ndarray<double, 3> z(y);
       REQUIRE(*y.storage().data().count == 2);
-      y = f_move(ndarray::ndarray<double, 3>(1,2,3));
+      y = f_move(ndarray::ndarray<double, 3>(1, 2, 3));
       REQUIRE(*y.storage().data().count == 1);
       REQUIRE(*z.storage().data().count == 1);
     }
@@ -262,14 +262,21 @@ TEST_CASE("NDArrayTest") {
   SECTION("Resize") {
     ndarray::ndarray<double, 5> array(1, 2, 3, 4, 5);
     std::vector<size_t>         shape{2, 1, 5, 3, 5};
-    std::array<size_t, 3>       shape_arr{1, 1, 2};
-    ndarray::ndarray<double, 5> resized_array  = array.resize(shape);
-    ndarray::ndarray<double, 4> resized_array2 = array.resize(12, 10, 5, 3);
-    ndarray::ndarray<double, 3> resized_array3 = array.resize(shape_arr);
-    REQUIRE(std::equal(shape.begin(), shape.end(), resized_array.shape().begin()));
-    REQUIRE(std::equal(shape_arr.begin(), shape_arr.end(), resized_array3.shape().begin()));
-    REQUIRE(resized_array2.shape().size() == 4);
-    REQUIRE(resized_array2.shape()[1] == 10);
+    std::vector<size_t>         wrong_shape{2, 1, 5, 3};
+    std::array<size_t, 5>       shape_arr{1, 1, 2, 2, 1};
+    array.resize(shape);
+    REQUIRE(std::equal(shape.begin(), shape.end(), array.shape().begin()));
+    array.resize(12, 10, 5, 3, 2);
+    REQUIRE(array.shape().size() == 5);
+    REQUIRE(array.shape()[1] == 10);
+    array.resize(shape_arr);
+    REQUIRE(std::equal(shape_arr.begin(), shape_arr.end(), array.shape().begin()));
+    REQUIRE_THROWS(array.resize(wrong_shape));
+    {
+      size_t                      count         = *array.storage().data().count;
+      ndarray::ndarray<double, 5> resized_array = array;
+      REQUIRE_THROWS(resized_array.resize(1, 2, 3, 5, 6));
+    }
   }
 
   SECTION("View") {
