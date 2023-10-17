@@ -125,13 +125,15 @@ namespace green::ndarray {
      * Get pointer to the managed data casted to a proper type.
      *
      * @tparam T - type to cast pointer into.
-     * @return pointer to a mamged data.
+     * @return pointer to a managed data.
      */
     template <typename T>
     T* get() const {
+#ifndef NDEBUG
       if (data_.size % sizeof(T) != 0) {
         throw std::runtime_error("data can not be represented in chosen type");
       }
+#endif
       return static_cast<T*>(data_.ptr);
     }
 

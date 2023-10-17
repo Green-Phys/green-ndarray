@@ -118,6 +118,8 @@ TEST_CASE("Storage") {
     REQUIRE(std::abs(x.real() - 10.0) < 1e-12);
     REQUIRE(std::abs(x.imag() - 15.0) < 1e-12);
     gn::storage_t st2(sizeof(double));
+#ifndef NDEBUG
     REQUIRE_THROWS(st2.get<std::complex<double>>());
+#endif
   }
 }

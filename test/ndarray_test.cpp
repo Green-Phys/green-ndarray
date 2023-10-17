@@ -254,7 +254,9 @@ TEST_CASE("NDArrayTest") {
     REQUIRE(std::equal(shape.begin(), shape.end(), reshaped_array.shape().begin()));
     REQUIRE(std::equal(shape_arr.begin(), shape_arr.end(), reshaped_array2.shape().begin()));
     REQUIRE(std::equal(strides.begin(), strides.end(), reshaped_array.strides().begin()));
+#ifndef NDEBUG
     REQUIRE_THROWS(array.reshape(shape));
+#endif
     auto reshaped_array3 = array2.reshape(shape);
     REQUIRE(std::equal(shape.begin(), shape.end(), reshaped_array3.shape().begin()));
   }
@@ -275,11 +277,15 @@ TEST_CASE("NDArrayTest") {
     REQUIRE(array.size() == 3600);
     array.resize(shape_arr);
     REQUIRE(std::equal(shape_arr.begin(), shape_arr.end(), array.shape().begin()));
+#ifndef NDEBUG
     REQUIRE_THROWS(array.resize(wrong_shape));
+#endif
     {
       size_t                      count         = *array.storage().data().count;
       ndarray::ndarray<double, 5> resized_array = array;
+#ifndef NDEBUG
       REQUIRE_THROWS(resized_array.resize(1, 2, 3, 5, 6));
+#endif
     }
   }
 
@@ -322,7 +328,9 @@ TEST_CASE("NDArrayTest") {
     ndarray::ndarray<std::complex<double>, 5> zarray(4, 2, 3, 4, 4);
     ndarray::ndarray<std::complex<double>, 5> zarray2(1, 2, 3, 4, 4);
     zarray << darray;
+#ifndef NDEBUG
     REQUIRE_THROWS(zarray2 << darray);
+#endif
     REQUIRE(std::equal(darray.shape().begin(), darray.shape().end(), zarray.shape().begin(),
                        [](double a, const std::complex<double>& b) { return std::abs(a - b.real()) < 1e-12; }));
     REQUIRE(std::equal(zarray.shape().begin(), zarray.shape().end(), zarray.shape().begin(),
