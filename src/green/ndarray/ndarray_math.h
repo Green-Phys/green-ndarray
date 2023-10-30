@@ -150,7 +150,7 @@ namespace green::ndarray {
                                                                                           const ndarray<T2, Dim>& second) {   \
     using result_t = std::common_type_t<T1, T2>;                                                                              \
     ndarray<result_t, Dim> result(second.shape());                                                                            \
-    std::transform(second.begin(), second.end(), result.begin(), [&](const T1 s) { return result_t(first) OP result_t(s); }); \
+    std::transform(second.begin(), second.end(), result.begin(), [&](const T2 s) { return result_t(first) OP result_t(s); }); \
     return result;                                                                                                            \
   }
 
