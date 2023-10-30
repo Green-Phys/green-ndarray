@@ -27,7 +27,7 @@ namespace green::ndarray {
           res /= array.shape()[array.dim() - ind - 1];
         }
         std::transform(indices.begin(), indices.end(), result.strides().begin(), indices.begin(), std::multiplies<size_t>());
-        size_t ind                     = std::accumulate(indices.begin(), indices.end(), size_t(0), std::plus<size_t>());
+        size_t ind                              = std::accumulate(indices.begin(), indices.end(), size_t(0), std::plus<size_t>());
         result.storage().template get<T>()[ind] = array.storage().template get<T>()[array.offset() + i];
       }
       return result;
@@ -92,12 +92,12 @@ namespace green::ndarray {
 
   // Inplace operations with scalars
 
-#define INPLACE_MATH_OP_WITH_SCALAR(IO, OP)                                                                                     \
-  template <typename T1, typename T2, size_t Dim>                                                                               \
-  std::enable_if_t<is_scalar_v<T2> && std::is_convertible_v<T2, T1>, ndarray<T1, Dim>>& operator IO(ndarray<T1, Dim>& first,    \
-                                                                                                    T2                second) { \
-    std::transform(first.begin(), first.end(), first.begin(), [&](const T1 f) { return T1(f) OP T1(second); });                 \
-    return first;                                                                                                               \
+#define INPLACE_MATH_OP_WITH_SCALAR(IO, OP)                                                                                  \
+  template <typename T1, typename T2, size_t Dim>                                                                            \
+  std::enable_if_t<is_scalar_v<T2> && std::is_convertible_v<T2, T1>, ndarray<T1, Dim>>& operator IO(ndarray<T1, Dim>& first, \
+                                                                                                    T2                second) {             \
+    std::transform(first.begin(), first.end(), first.begin(), [&](const T1 f) { return T1(f) OP T1(second); });              \
+    return first;                                                                                                            \
   }
 
   INPLACE_MATH_OP_WITH_SCALAR(+=, +)
@@ -135,20 +135,23 @@ namespace green::ndarray {
   };
 
   // Binary operations with scalars
-#define MATH_OP_WITH_SCALAR(OP)                                                                                              \
-  template <typename T1, typename T2, size_t Dim>                                                                            \
-  std::enable_if_t<is_scalar_v<T2>, ndarray<std::common_type_t<T1, T2>, Dim>> operator OP(const ndarray<T1, Dim>& first,     \
-                                                                                          T2                      second) {  \
-    using result_t = std::common_type_t<T1, T2>;                                                                             \
-    ndarray<result_t, Dim> result(first.shape());                                                                            \
-    std::transform(first.begin(), first.end(), result.begin(), [&](const T1 f) { return result_t(f) OP result_t(second); }); \
-    return result;                                                                                                           \
-  };                                                                                                                         \
-                                                                                                                             \
-  template <typename T1, typename T2, size_t Dim>                                                                            \
-  std::enable_if_t<is_scalar_v<T1>, ndarray<std::common_type_t<T1, T2>, Dim>> operator OP(T1                      first,     \
-                                                                                          const ndarray<T2, Dim>& second) {  \
-    return second OP first;                                                                                                  \
+#define MATH_OP_WITH_SCALAR(OP)                                                                                               \
+  template <typename T1, typename T2, size_t Dim>                                                                             \
+  std::enable_if_t<is_scalar_v<T2>, ndarray<std::common_type_t<T1, T2>, Dim>> operator OP(const ndarray<T1, Dim>& first,      \
+                                                                                          T2                      second) {                        \
+    using result_t = std::common_type_t<T1, T2>;                                                                              \
+    ndarray<result_t, Dim> result(first.shape());                                                                             \
+    std::transform(first.begin(), first.end(), result.begin(), [&](const T1 f) { return result_t(f) OP result_t(second); });  \
+    return result;                                                                                                            \
+  };                                                                                                                          \
+                                                                                                                              \
+  template <typename T1, typename T2, size_t Dim>                                                                             \
+  std::enable_if_t<is_scalar_v<T1>, ndarray<std::common_type_t<T1, T2>, Dim>> operator OP(T1                      first,      \
+                                                                                          const ndarray<T2, Dim>& second) {   \
+    using result_t = std::common_type_t<T1, T2>;                                                                              \
+    ndarray<result_t, Dim> result(second.shape());                                                                            \
+    std::transform(second.begin(), second.end(), result.begin(), [&](const T1 s) { return result_t(first) OP result_t(s); }); \
+    return result;                                                                                                            \
   }
 
   MATH_OP_WITH_SCALAR(+)

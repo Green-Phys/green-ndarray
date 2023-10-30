@@ -47,7 +47,7 @@ TEST_CASE("NDArrayMathTest") {
     ndarray::ndarray<double, 2> arr4_c = arr4.copy();
     arr1(0, 1) += arr2(0, 0) * 1.0;
     arr3_c += arr4_c;
-    REQUIRE(std::equal(arr3_c.begin(), arr3_c.end(), arr3.begin(), [](double a, double b) {return std::abs(a-b)<1e-12;}));
+    REQUIRE(std::equal(arr3_c.begin(), arr3_c.end(), arr3.begin(), [](double a, double b) { return std::abs(a - b) < 1e-12; }));
   }
 
   SECTION("InplaceMathWithScalars") {
@@ -104,6 +104,24 @@ TEST_CASE("NDArrayMathTest") {
     REQUIRE(std::abs(arr1(0, 1, 2, 0) - arr3(0, 1, 2, 0)) < 1e-12);
     ndarray::ndarray<double, 4> arr4 = shift + arr1;
     REQUIRE(std::abs(arr4(0, 1, 0, 2) - arr2(0, 1, 0, 2)) < 1e-12);
+    ndarray::ndarray<double, 4> arr5 = shift - arr1;
+    REQUIRE(std::equal(arr5.begin(), arr5.end(), arr1.begin(),
+                       [shift](double a5, double a1) { return std::abs(a5 - (shift - a1)) < 1e-12; }));
+  }
+
+  SECTION("MathScalarMultDiv") {
+    ndarray::ndarray<double, 4> arr1(1, 2, 3, 4);
+    initialize_array(arr1);
+    double                      scale = 15.0;
+    ndarray::ndarray<double, 4> arr2  = arr1 / scale;
+    REQUIRE(std::abs((arr1(0, 1, 2, 2) / scale) - arr2(0, 1, 2, 2)) < 1e-12);
+    ndarray::ndarray<double, 4> arr3 = arr2 * scale;
+    REQUIRE(std::abs(arr1(0, 1, 2, 0) - arr3(0, 1, 2, 0)) < 1e-12);
+    ndarray::ndarray<double, 4> arr4 = scale * arr1;
+    REQUIRE(std::abs(arr4(0, 1, 0, 2) - scale * arr1(0, 1, 0, 2)) < 1e-12);
+    ndarray::ndarray<double, 4> arr5 = scale / arr1;
+    REQUIRE(std::equal(arr5.begin(), arr5.end(), arr1.begin(),
+                       [scale](double a5, double a1) { return std::abs(a5 - (scale / a1)) < 1e-12; }));
   }
 
   SECTION("UnaryOp") {
