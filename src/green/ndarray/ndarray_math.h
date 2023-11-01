@@ -138,7 +138,7 @@ namespace green::ndarray {
 #define MATH_OP_WITH_SCALAR(OP)                                                                                               \
   template <typename T1, typename T2, size_t Dim>                                                                             \
   std::enable_if_t<is_scalar_v<T2>, ndarray<std::common_type_t<T1, T2>, Dim>> operator OP(const ndarray<T1, Dim>& first,      \
-                                                                                          T2                      second) {                        \
+                                                                                          T2                      second) {   \
     using result_t = std::common_type_t<T1, T2>;                                                                              \
     ndarray<result_t, Dim> result(first.shape());                                                                             \
     std::transform(first.begin(), first.end(), result.begin(), [&](const T1 f) { return result_t(f) OP result_t(second); });  \

@@ -35,6 +35,8 @@ namespace green::ndarray {
   struct ndarray {
     static_assert(is_scalar<T>::value, "ndarray element type should be of a scalar type");
 
+    using value_type = T;
+
     /**
      * Default constructor
      */
