@@ -20,7 +20,15 @@
 
 namespace green::ndarray {
 
-  template <typename T>
+  namespace internal {
+    template <class Func, std::size_t... Is>
+    constexpr void static_for(std::index_sequence<Is...>, Func&& f) {
+      (f(std::integral_constant<size_t, Is>{}), ...);
+    }
+
+  }  // namespace internal
+
+  template <typename>
   struct is_complex : std::false_type {};
   template <typename T>
   struct is_complex<std::complex<T>> : std::true_type {};
@@ -47,8 +55,7 @@ namespace green::ndarray {
 
     ndarray(const std::array<size_t, Dim>& shape, const std::array<size_t, Dim> strides, size_t offset,
             const storage_t& storage) :
-        shape_(shape),
-        strides_(strides), size_(size_for_shape(shape)), offset_(offset), storage_(storage) {}
+        shape_(shape), strides_(strides), size_(size_for_shape(shape)), offset_(offset), storage_(storage) {}
 
     /**
      * Constructor for initialization from dimensions (allocates memory for attribute storage_).
@@ -157,7 +164,7 @@ namespace green::ndarray {
     ndarray(ndarray<T, Dim>&& rhs) :
         shape_(std::move(rhs.shape_)), strides_(std::move(rhs.strides_)), size_(rhs.size_), offset_(rhs.offset_),
         storage_(std::move(rhs.storage_)) {
-      rhs.storage_ = storage_t();
+      // rhs.storage_ = storage_t();
     }
 
     /*
@@ -174,12 +181,11 @@ namespace green::ndarray {
     }
 
     ndarray<T, Dim>& operator=(ndarray<T, Dim>&& rhs) noexcept {
-      shape_       = std::move(rhs.shape_);
-      strides_     = std::move(rhs.strides_);
-      size_        = rhs.size_;
-      offset_      = rhs.offset_;
-      storage_     = std::move(rhs.storage_);
-      rhs.storage_ = storage_t();
+      shape_   = std::move(rhs.shape_);
+      strides_ = std::move(rhs.strides_);
+      size_    = rhs.size_;
+      offset_  = rhs.offset_;
+      storage_ = std::move(rhs.storage_);
       return *this;
     }
 
@@ -207,7 +213,7 @@ namespace green::ndarray {
       return ret;
     }
 
-    virtual ~ndarray() {}
+    ~ndarray() = default;
 
     /**
      * Returns constant pointer to an element for specific indidces
@@ -265,13 +271,13 @@ namespace green::ndarray {
      * @return const sub-ndarray at `inds` coordinates
      */
     template <typename... Indices>
-    std::enable_if_t<sizeof...(Indices) < Dim, ndarray<const typename std::remove_const<T>::type, Dim - sizeof...(Indices)>>
-    operator()(Indices... inds) const {
+    std::enable_if_t<sizeof...(Indices) < Dim, ndarray<const std::remove_const_t<T>, Dim - sizeof...(Indices)>> operator()(
+        Indices... inds) const {
 #ifndef NDEBUG
       size_t num_of_inds = sizeof...(Indices);
       check_dimensions(shape_, num_of_inds);
 #endif
-      return ndarray<const typename std::remove_const<T>::type, Dim - sizeof...(Indices)>(*this, inds...);
+      return ndarray<const std::remove_const_t<T>, Dim - sizeof...(Indices)>(*this, inds...);
     };
 
     /**
@@ -284,7 +290,8 @@ namespace green::ndarray {
      * @return value at `inds` indices
      */
     template <typename... Indices>
-    const std::enable_if_t<sizeof...(Indices) == Dim, T>& operator()(Indices... inds) const {
+    std::enable_if_t<sizeof...(Indices) == Dim, std::conditional_t<std::is_arithmetic_v<T>, T, const T&>> operator()(
+        Indices... inds) const {
 #ifndef NDEBUG
       size_t num_of_inds = sizeof...(Indices);
       if (num_of_inds != shape_.size()) {
@@ -388,7 +395,7 @@ namespace green::ndarray {
     }
 
     void resize(const std::array<size_t, Dim>& new_shape, bool ref_check = true) {
-      if (ref_check && storage_.data().count && *storage_.data().count > 1) {
+      if (ref_check && storage_.data().count && storage_.data().count > 1) {
         throw std::logic_error("can not resize array that is a reference to another array.");
       }
       shape_   = new_shape;
@@ -559,19 +566,23 @@ namespace green::ndarray {
 
     template <typename... Indices>
     size_t get_index(Indices... inds) const {
-#ifndef NDEBUG
-      if (sizeof...(Indices) > shape_.size()) throw std::logic_error("wrong dimensions");
-#endif
-
       std::array<size_t, sizeof...(Indices)> ind_arr{{size_t(inds)...}};
 #ifndef NDEBUG
+      if (sizeof...(Indices) > shape_.size()) throw std::logic_error("wrong dimensions");
       for (size_t i = 0; i < ind_arr.size(); ++i) {
         if (ind_arr[i] >= shape_[i]) throw std::logic_error(std::to_string(i) + "-th index is larger than its dimension.");
       }
 #endif
-      std::transform(ind_arr.begin(), ind_arr.end(), strides_.begin(), ind_arr.begin(), std::multiplies<size_t>());
-      size_t ind = std::accumulate(ind_arr.begin(), ind_arr.end(), size_t(0), std::plus<size_t>());
-      return ind;
+      // std::transform(ind_arr.begin(), ind_arr.end(), strides_.begin(), ind_arr.begin(), std::multiplies<size_t>());
+      // size_t ind = std::accumulate(ind_arr.begin(), ind_arr.end(), size_t(0), std::plus<size_t>());
+      // return ind;
+      auto   ind = std::forward_as_tuple(inds...);
+      size_t pos = std::get<sizeof...(Indices) - 1>(ind);
+      internal::static_for(std::make_index_sequence<sizeof...(Indices) - 1>{}, [&](auto index) {
+        constexpr size_t i = index.value;
+        pos += std::get<i>(ind) * strides_[i];
+      });
+      return pos;
     }
 
     template <typename Container, typename Container2>
@@ -609,7 +620,10 @@ namespace green::ndarray {
       }
 #endif
       std::array<size_t, Dim> shape;
-      std::copy(old_shape.data() + D, old_shape.data() + old_shape.size(), shape.data());
+      internal::static_for(std::make_index_sequence<Dim>{}, [&](auto index) {
+        constexpr size_t i = index.value;
+        shape[i]           = old_shape[i + D];
+      });
       return shape;
     }
 
@@ -624,7 +638,7 @@ namespace green::ndarray {
     std::array<size_t, Dim> strides_for_shape(Container&& shape) const {
       std::array<size_t, Dim> str;
       if (shape.size() == 0) return str;
-      str[shape.size() - 1] = 1;
+      str[Dim - 1] = 1;
       for (int k = int(shape.size()) - 2; k >= 0; --k) str[k] = str[k + 1] * shape.data()[k + 1];
       return str;
     }

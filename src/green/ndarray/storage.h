@@ -13,35 +13,33 @@
 
 namespace green::ndarray {
   struct shared_mem_blk {
-    void*   ptr;
-    size_t  size;
-    size_t* count;
+    void*  ptr;
+    size_t size;
+    int    count;
   };
 
-  inline void standard_deallocation(shared_mem_blk blk) {
-    if (!blk.count) return;
-    size_t& count = *blk.count;
-    --count;
-    assert(count >= 0);
-    if (count == 0) {
+  typedef void (*dealloc_fun)(shared_mem_blk& blk);
+
+  inline void  standard_deallocation(shared_mem_blk& blk) {
+    // if (!blk.count) return;
+    assert(blk.count > 0);
+    --blk.count;
+    if (blk.count == 0) {
       if (blk.ptr) std::free(blk.ptr);
-      if (blk.count) std::free(blk.count);
-      blk.ptr   = nullptr;
-      blk.count = nullptr;
+      blk.ptr = nullptr;
+      delete &blk;
     }
   }
 
-  inline void noop_deallocation(shared_mem_blk blk) {
+  inline void noop_deallocation(shared_mem_blk& blk) {
     if (!blk.count) return;
-    size_t& count = *blk.count;
-    --count;
-    if (count == 0) {
-      std::free(blk.count);
-      blk.count = nullptr;
+    --blk.count;
+    if (blk.count == 0) {
+      delete &blk;
       return;
     }
     if (blk.ptr == nullptr) return;
-    assert(count >= 0);
+    assert(blk.count >= 0);
   }
 
   /**
@@ -54,41 +52,38 @@ namespace green::ndarray {
     /**
      * Default constructor
      */
-    storage_t() : data_{nullptr, 0, nullptr}, release_(noop_deallocation) {}
+             storage_t() : data_(new shared_mem_blk{nullptr, 0, 0}), release_(noop_deallocation) {}
 
     /**
      * Create storage and allocate data of `size' bytes
      * @param size - number of bytes to allocate
      */
-    explicit storage_t(size_t size) : data_{std::malloc(size), size, new size_t(1)}, release_(standard_deallocation) {}
+    explicit storage_t(size_t size) : data_(new shared_mem_blk{std::malloc(size), size, 1}), release_(standard_deallocation) {}
     /**
      * Create storage for outside managed data
      *
      * @param ref - pointer to the data.
      * @param size - optional
      */
-    explicit storage_t(void* ref, size_t size = 0) : data_{ref, size, new size_t(1)}, release_(noop_deallocation) {}
+    explicit storage_t(void* ref, size_t size = 0) : data_(new shared_mem_blk{ref, size, 1}), release_(noop_deallocation) {}
 
     /**
      * Move constructor
      * @param rhs - object to be moved
      */
-    storage_t(storage_t&& rhs)  noexcept : data_(rhs.data_), release_(rhs.release_) {
-      rhs.data_.ptr   = nullptr;
-      rhs.data_.count = nullptr;
-    }
+             storage_t(storage_t&& rhs) noexcept : data_(rhs.data_), release_(rhs.release_) { rhs.data_ = nullptr; }
     /**
      * Copy constructor. New storage will point to the exact same location in memory and reference counter will be incremented.
      *
      * @param rhs - objects to be copied
      */
-    storage_t(const storage_t& rhs) : data_(rhs.data_), release_(rhs.release_) { ++(*data_.count); }
+             storage_t(const storage_t& rhs) : data_(rhs.data_), release_(rhs.release_) { ++(data_->count); }
 
     /**
      * Destructor will release possesion of the data. For self-managed data memory will be freed if needed.
      */
-    ~storage_t() {
-      if (release_) release_(data_);
+    ~        storage_t() {
+      if (release_ && data_) release_(*data_);
     }
 
     /**
@@ -98,10 +93,10 @@ namespace green::ndarray {
      * @return storage that point at the exact same memory as `rhs`
      */
     storage_t& operator=(const storage_t& rhs) {
-      if(release_)release_(data_);
+      if (release_) release_(*data_);
       data_ = rhs.data_;
-      if(data_.count) {
-        ++(*data_.count);
+      if (data_->count) {
+        ++(data_->count);
       }
       release_ = rhs.release_;
       return *this;
@@ -113,11 +108,11 @@ namespace green::ndarray {
      * @return storage that point at the exact same memory as `rhs`
      */
     storage_t& operator=(storage_t&& rhs) {
-      if(release_)release_(data_);
-      data_           = std::move(rhs.data_);
-      release_        = std::move(rhs.release_);
-      rhs.data_.ptr   = nullptr;
-      rhs.data_.count = nullptr;
+      if (release_) release_(*data_);
+      data_        = rhs.data_;
+      release_     = rhs.release_;
+      rhs.data_    = nullptr;
+      rhs.release_ = nullptr;
       return *this;
     }
 
@@ -130,11 +125,11 @@ namespace green::ndarray {
     template <typename T>
     T* get() const {
 #ifndef NDEBUG
-      if (data_.size % sizeof(T) != 0) {
+      if (data_->size % sizeof(T) != 0) {
         throw std::runtime_error("data can not be represented in chosen type");
       }
 #endif
-      return static_cast<T*>(data_.ptr);
+      return static_cast<T*>(data_->ptr);
     }
 
     /**
@@ -144,19 +139,19 @@ namespace green::ndarray {
      * @param release_fun - function used to release data posession. by default noop function is used.
      * @param size - size of the managed data, 0 by default.
      */
-    void reset(void* new_data, std::function<void(shared_mem_blk)> release_fun = noop_deallocation, size_t size = 0) {
-      release_(data_);
+    void reset(void* new_data, dealloc_fun release_fun = noop_deallocation, size_t size = 0) {
+      release_(*data_);
       release_ = release_fun;
-      data_    = {new_data, size, new size_t(1)};
+      data_    = new shared_mem_blk{new_data, size, 1};
     }
 
     // next two functions are made public for test puropse
-    const shared_mem_blk&               data() const { return data_; }
-    std::function<void(shared_mem_blk)> release() const { return release_; }
+    [[nodiscard]] const shared_mem_blk& data() const { return *data_; }
+    [[nodiscard]] dealloc_fun           release() const { return release_; }
 
   private:
-    shared_mem_blk                      data_;
-    std::function<void(shared_mem_blk)> release_;
+    shared_mem_blk* data_;
+    dealloc_fun     release_;
   };
 
 }  // namespace green::ndarray

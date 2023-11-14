@@ -7,7 +7,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <complex>
-#include <random>
 
 #include "common.h"
 
@@ -44,43 +43,43 @@ TEST_CASE("NDArrayTest") {
   SECTION("Copy Constructor") {
     ndarray::ndarray<double, 3> x(1, 2, 3);
     initialize_array(x);
-    REQUIRE(*x.storage().data().count == 1);
+    REQUIRE(x.storage().data().count == 1);
     {
       ndarray::ndarray<double, 3> y(x);
-      REQUIRE(*y.storage().data().count == 2);
+      REQUIRE(y.storage().data().count == 2);
     }
-    REQUIRE(*x.storage().data().count == 1);
+    REQUIRE(x.storage().data().count == 1);
   }
 
   SECTION("Copy Assignment") {
     ndarray::ndarray<double, 3> x(1, 2, 3);
     initialize_array(x);
-    REQUIRE(*x.storage().data().count == 1);
+    REQUIRE(x.storage().data().count == 1);
     {
       ndarray::ndarray<double, 3> y(3, 4, 5);
       ndarray::ndarray<double, 3> z(y);
-      REQUIRE(*y.storage().data().count == 2);
+      REQUIRE(y.storage().data().count == 2);
       y = x;
-      REQUIRE(*y.storage().data().count == 2);
-      REQUIRE(*z.storage().data().count == 1);
+      REQUIRE(y.storage().data().count == 2);
+      REQUIRE(z.storage().data().count == 1);
     }
-    REQUIRE(*x.storage().data().count == 1);
+    REQUIRE(x.storage().data().count == 1);
   }
 
   SECTION("Move Assignment") {
     ndarray::ndarray<double, 3> x(1, 2, 3);
     initialize_array(x);
-    REQUIRE(*x.storage().data().count == 1);
+    REQUIRE(x.storage().data().count == 1);
     {
       auto                        f_move = [](ndarray::ndarray<double, 3> a) { return std::move(a); };
       ndarray::ndarray<double, 3> y(3, 4, 5);
-      ndarray::ndarray<double, 3> z(y);
-      REQUIRE(*y.storage().data().count == 2);
+      ndarray::ndarray            z(y);
+      REQUIRE(y.storage().data().count == 2);
       y = f_move(ndarray::ndarray<double, 3>(1, 2, 3));
-      REQUIRE(*y.storage().data().count == 1);
-      REQUIRE(*z.storage().data().count == 1);
+      REQUIRE(y.storage().data().count == 1);
+      REQUIRE(z.storage().data().count == 1);
     }
-    REQUIRE(*x.storage().data().count == 1);
+    REQUIRE(x.storage().data().count == 1);
   }
 
   SECTION("Init With Vector") {
@@ -281,7 +280,7 @@ TEST_CASE("NDArrayTest") {
     REQUIRE_THROWS(array.resize(wrong_shape));
 #endif
     {
-      size_t                      count         = *array.storage().data().count;
+      size_t                      count         = array.storage().data().count;
       ndarray::ndarray<double, 5> resized_array = array;
 #ifndef NDEBUG
       REQUIRE_THROWS(resized_array.resize(1, 2, 3, 5, 6));
