@@ -27,3 +27,7 @@ jobs:
           module load BuildEnv/gcc-12.2.0.lua;
           cd build;
           ctest -j2 --output-on-failure
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
