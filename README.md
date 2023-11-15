@@ -2,6 +2,7 @@
 [![GitHub license](https://img.shields.io/badge/C%2B%2B-17-blue)](https://en.cppreference.com/w/cpp/compiler_support/17)
 
 ![symm](https://github.com/Green-Phys/green-ndarrays/actions/workflows/test.yaml/badge.svg)
+[![codecov](https://codecov.io/github/Green-Phys/green-ndarray/graph/badge.svg?token=FL4FPI48MD)](https://codecov.io/github/Green-Phys/green-ndarray)
 
 # green-ndarray
 Header-only library for basic operations with multidimensional arrays 
