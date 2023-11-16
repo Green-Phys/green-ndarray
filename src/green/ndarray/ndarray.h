@@ -416,9 +416,6 @@ namespace green::ndarray {
             "When changing to a larger type, its size must be a divisor of the total size in bytes of the last axis of the "
             "array.");
       }
-      if (sizeof(T) < sizeof(T2) and (offset_ % (sizeof(T2) / sizeof(T))) != 0) {
-        throw std::runtime_error("Array");
-      }
       std::array<size_t, Dim> new_shape(shape_);
       new_shape[Dim - 1]          = (shape_[Dim - 1] * sizeof(T)) / sizeof(T2);
       size_t           new_offset = (offset_ * sizeof(T)) / sizeof(T2);

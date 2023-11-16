@@ -58,7 +58,7 @@ TEST_CASE("NDArrayMathTest") {
     REQUIRE_THROWS(arr1 += arr1_1);
     REQUIRE_THROWS(arr1 -= arr1_1);
     REQUIRE_THROWS(arr1(0,1) += arr1_1(0,1));
-    REQUIRE_THROWS(arr1(0,1) -= arr1_1(0,1));
+    REQUIRE_THROWS(arr1(0,0) -= arr1_1(0,1));
 #endif
   }
 
