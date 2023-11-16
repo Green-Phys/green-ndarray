@@ -107,7 +107,9 @@ TEST_CASE("NDArrayTest") {
     initialize_array(array_ref2);
     REQUIRE(data.data() == array_ref.ref(0));
     REQUIRE(data.data() == array_ref.ref(0,0,0,0));
+#ifndef NDEBUG
     REQUIRE_THROWS(array_ref.ref(0,0,0,0,0));
+#endif
     REQUIRE(array_ref(0, 0, 0, 0) == 1);
     REQUIRE(array_ref(0, 1, 0, 0) == 2);
     REQUIRE(array_ref(1, 0, 0, 0) == 30);
