@@ -87,8 +87,8 @@ TEST_CASE("Storage") {
   SECTION("Reset ref") {
     std::vector<double>       x(100);
     gn::storage_t             st1(50);
-    const gn::shared_mem_blk* ref = &st1.data();
     st1.reset(x.data());
+    const gn::shared_mem_blk* ref = &st1.data();
     REQUIRE(ref->ptr == x.data());
   }
   SECTION("Change Storage type") {

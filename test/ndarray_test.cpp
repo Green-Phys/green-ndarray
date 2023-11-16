@@ -105,6 +105,9 @@ TEST_CASE("NDArrayTest") {
     array_ref.set_ref(data.data());
     array_ref2.set_ref(array.data());
     initialize_array(array_ref2);
+    REQUIRE(data.data() == array_ref.ref(0));
+    REQUIRE(data.data() == array_ref.ref(0,0,0,0));
+    REQUIRE_THROWS(array_ref.ref(0,0,0,0,0));
     REQUIRE(array_ref(0, 0, 0, 0) == 1);
     REQUIRE(array_ref(0, 1, 0, 0) == 2);
     REQUIRE(array_ref(1, 0, 0, 0) == 30);
@@ -258,6 +261,17 @@ TEST_CASE("NDArrayTest") {
 #endif
     auto reshaped_array3 = array2.reshape(shape);
     REQUIRE(std::equal(shape.begin(), shape.end(), reshaped_array3.shape().begin()));
+  }
+
+  SECTION("Inplace Reshape") {
+    ndarray::ndarray<double, 5> array(1, 2, 3, 4, 5);
+    std::array<size_t, 5>       shape_arr{2, 1, 3, 4, 5};
+    std::array<size_t, 5>       shape_err{2, 2, 3, 4, 5};
+    array.inplace_reshape(shape_arr);
+    REQUIRE(std::equal(shape_arr.begin(), shape_arr.end(), array.shape().begin()));
+#ifndef NDEBUG
+    REQUIRE_THROWS(array.inplace_reshape(shape_err));
+#endif
   }
 
   SECTION("Resize") {

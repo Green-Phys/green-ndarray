@@ -226,7 +226,7 @@ namespace green::ndarray {
     const T* ref(Indices... inds) const {
 #ifndef NDEBUG
       size_t num_of_inds = sizeof...(Indices);
-      check_dimensions(num_of_inds);
+      check_dimensions(shape_, num_of_inds);
 #endif
       return &storage_.get<T>()[offset_ + get_index(inds...)];
     }
@@ -242,7 +242,7 @@ namespace green::ndarray {
     T* ref(Indices... inds) {
 #ifndef NDEBUG
       size_t num_of_inds = sizeof...(Indices);
-      check_dimensions(num_of_inds);
+      check_dimensions(shape_, num_of_inds);
 #endif
       return &storage_.get<T>()[offset_ + get_index(inds...)];
     }
@@ -292,13 +292,6 @@ namespace green::ndarray {
     template <typename... Indices>
     std::enable_if_t<sizeof...(Indices) == Dim, std::conditional_t<std::is_arithmetic_v<T>, T, const T&>> operator()(
         Indices... inds) const {
-#ifndef NDEBUG
-      size_t num_of_inds = sizeof...(Indices);
-      if (num_of_inds != shape_.size()) {
-        throw std::runtime_error("Number of indices (" + std::to_string(num_of_inds) + ") is not equal to array's dimension (" +
-                                 std::to_string(shape_.size()) + ")");
-      }
-#endif
       return storage_.get<T>()[offset_ + get_index(inds...)];
     }
 
@@ -311,13 +304,6 @@ namespace green::ndarray {
      */
     template <typename... Indices>
     std::enable_if_t<sizeof...(Indices) == Dim, T>& operator()(Indices... inds) {
-#ifndef NDEBUG
-      size_t num_of_inds = sizeof...(Indices);
-      if (num_of_inds != shape_.size()) {
-        throw std::runtime_error("Number of indices (" + std::to_string(num_of_inds) + ") is not equal to array's dimension (" +
-                                 std::to_string(shape_.size()) + ")");
-      }
-#endif
       return storage_.get<T>()[offset_ + get_index(inds...)];
     }
 
@@ -378,9 +364,10 @@ namespace green::ndarray {
     }
 
     ndarray<T, Dim>& inplace_reshape(const std::array<size_t, Dim>& shape) {
-      if (offset_ != 0) {
+#ifndef NDEBUG
+      if (size_for_shape(shape) != size_)
         throw std::logic_error("new shape is not consistent with old one");
-      }
+#endif
       shape_   = shape;
       strides_ = strides_for_shape(shape);
       return *this;

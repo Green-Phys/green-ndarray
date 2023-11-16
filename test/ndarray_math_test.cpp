@@ -22,6 +22,11 @@ TEST_CASE("NDArrayMathTest") {
     REQUIRE(std::abs(arr1(0, 1, 2, 0) - arr3(0, 1, 2, 0)) < 1e-12);
     arr1 -= arr2;
     REQUIRE(std::abs(arr1(0, 1, 0, 2) - arr4(0, 1, 0, 2)) < 1e-12);
+#ifndef NDEBUG
+    ndarray::ndarray<double, 4> arr1_1(3, 2, 3, 4);
+    REQUIRE_THROWS(arr1 + arr1_1);
+    REQUIRE_THROWS(arr1 - arr1_1);
+#endif
   }
 
   SECTION("InplaceMathAddSub") {
@@ -48,6 +53,13 @@ TEST_CASE("NDArrayMathTest") {
     arr1(0, 1) += arr2(0, 0) * 1.0;
     arr3_c += arr4_c;
     REQUIRE(std::equal(arr3_c.begin(), arr3_c.end(), arr3.begin(), [](double a, double b) { return std::abs(a - b) < 1e-12; }));
+#ifndef NDEBUG
+    ndarray::ndarray<double, 4> arr1_1(3, 2, 5, 4);
+    REQUIRE_THROWS(arr1 += arr1_1);
+    REQUIRE_THROWS(arr1 -= arr1_1);
+    REQUIRE_THROWS(arr1(0,1) += arr1_1(0,1));
+    REQUIRE_THROWS(arr1(0,1) -= arr1_1(0,1));
+#endif
   }
 
   SECTION("InplaceMathWithScalars") {
@@ -150,11 +162,16 @@ TEST_CASE("NDArrayMathTest") {
     REQUIRE(arr1 == arr2);
     REQUIRE(arr3 == arr4);
     REQUIRE(arr5 == arr6);
+#ifndef NDEBUG
+    ndarray::ndarray<double, 4> arr7(5, 2, 3, 4);
+    REQUIRE_THROWS(arr1 == arr7);
+#endif
   }
 
   SECTION("Transpose") {
     ndarray::ndarray<double, 4> array(5, 5, 3, 4);
     initialize_array(array);
+    REQUIRE_THROWS_AS(transpose(array, "ijkl"), std::runtime_error);
     REQUIRE_THROWS_AS(transpose(array, "ijkl->ikl"), std::runtime_error);
     REQUIRE_THROWS_AS(transpose(array, "ijk->ikj"), std::runtime_error);
     REQUIRE_THROWS_AS(transpose(array, "ijkl->ikj1"), std::runtime_error);
