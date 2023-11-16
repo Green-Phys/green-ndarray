@@ -211,7 +211,7 @@ namespace green::ndarray {
       ndarray<std::remove_const_t<T>, Dim> ret(shape_);
       std::copy(begin(), end(), ret.begin());
       return ret;
-    }
+    } // LCOV_EXCL_LINE
 
     ~ndarray() = default;
 
@@ -442,7 +442,7 @@ namespace green::ndarray {
         }
       });
       return result;
-    }
+    } // LCOV_EXCL_LINE
 
     /**
      * Fill current array with values from `rhs` array with appropriate data conversion

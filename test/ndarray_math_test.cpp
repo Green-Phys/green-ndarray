@@ -53,6 +53,9 @@ TEST_CASE("NDArrayMathTest") {
     arr1(0, 1) += arr2(0, 0) * 1.0;
     arr3_c += arr4_c;
     REQUIRE(std::equal(arr3_c.begin(), arr3_c.end(), arr3.begin(), [](double a, double b) { return std::abs(a - b) < 1e-12; }));
+    arr1(0, 1) -= arr2(0, 0) * 1.0;
+    arr3_c -= arr4_c;
+    REQUIRE(std::equal(arr3_c.begin(), arr3_c.end(), arr3.begin(), [](double a, double b) { return std::abs(a - b) < 1e-12; }));
 #ifndef NDEBUG
     ndarray::ndarray<double, 4> arr1_1(3, 2, 5, 4);
     REQUIRE_THROWS(arr1 += arr1_1);

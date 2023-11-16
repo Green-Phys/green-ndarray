@@ -118,7 +118,7 @@ namespace green::ndarray {
     std::transform(first.begin(), first.end(), second.begin(), result.begin(),
                    [&](const T1 f, const T2 s) { return result_t(f) + result_t(s); });
     return result;
-  };
+  } // LCOV_EXCL_LINE
 
   template <typename T1, typename T2, size_t Dim>
   ndarray<std::common_type_t<T1, T2>, Dim> operator-(const ndarray<T1, Dim>& first, const ndarray<T2, Dim>& second) {
@@ -132,7 +132,7 @@ namespace green::ndarray {
     std::transform(first.begin(), first.end(), second.begin(), result.begin(),
                    [&](const T1 f, const T2 s) { return result_t(f) - result_t(s); });
     return result;
-  };
+  } // LCOV_EXCL_LINE
 
   // Binary operations with scalars
 #define MATH_OP_WITH_SCALAR(OP)                                                                                               \
@@ -143,7 +143,7 @@ namespace green::ndarray {
     ndarray<result_t, Dim> result(first.shape());                                                                             \
     std::transform(first.begin(), first.end(), result.begin(), [&](const T1 f) { return result_t(f) OP result_t(second); });  \
     return result;                                                                                                            \
-  };                                                                                                                          \
+  }                                                                                                                          \
                                                                                                                               \
   template <typename T1, typename T2, size_t Dim>                                                                             \
   std::enable_if_t<is_scalar_v<T1>, ndarray<std::common_type_t<T1, T2>, Dim>> operator OP(T1                      first,      \
@@ -166,7 +166,7 @@ namespace green::ndarray {
     ndarray<T1, Dim> result(first.shape());
     std::transform(first.begin(), first.end(), result.begin(), [&](const T1 f) { return -f; });
     return result;
-  };
+  } // LCOV_EXCL_LINE
 
   // Comparisons
 
@@ -180,7 +180,7 @@ namespace green::ndarray {
 #endif
     return std::equal(lhs.begin(), lhs.end(), rhs.begin(),
                       [](T1 l, T2 r) { return std::abs(result_t(l) - result_t(r)) < 1e-12; });
-  };
+  }
 
   template <typename T, size_t Dim>
   ndarray<T, Dim> transpose(const ndarray<T, Dim>& array, const std::string& string_pattern) {
