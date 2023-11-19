@@ -22,7 +22,7 @@ FetchContent_Declare(
         GIT_REPOSITORY https://github.com/Green-Phys/green-ndarray.git
         GIT_TAG origin/main # or a later release
 )
-FetchContent_MakeAvailable(green-h5pp)
+FetchContent_MakeAvailable(green-ndarray)
 ```
 Add predefined alias `GREEN::NDARRAY` it to your target:
 ```CMake
