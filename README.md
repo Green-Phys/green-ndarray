@@ -41,29 +41,58 @@ Here is a small example of some possible operations:
 using namespace green::ndarray;
 
 // Create empty 5d array of doubles
-ndarray<double, 5> array;
+ndarray<double, 5> array1;
 
 // Resize array to a new shape
-array.resize(3,4,5,6,7);
+array1.resize(3,4,5,6,7);
 
 // Set all elements of array to be 3
 
-array = 3.0;
+array1 = 3.0;
 
 // Create 5d array of doubles of shape (3,4,5,6,7) and set all elements to 1
 ndarray<double, 5> array2(3,4,5,6,7);
 array2 = 1.0;
 
-// Take a 2-dimesional slice of array at (1,2,3) leading index
-// Both array and array3 point at the same memory region.
+// Take a 2-dimesional slice of array1 at (1,2,3) leading index
+// Both array1 and array3 point at the same memory region.
 // array3 has a non-zero offset from the beginning of a memory region
-ndarray<double, 2> array3 = array(1,2,3);
+ndarray<double, 2> array3 = array1(1,2,3);
 
 // Get an element of array2 at (1,2,3,4,5) coordinate
 
 double value = array2(1,2,3,4,5);
+```
+
+Assignment operation does not do deep copy of the data. Example below shows possible scenarios
+for assignment and deep-copy of the data.
+
+```cpp
+// Create empty 5-dimensional array
+ndarray<double, 5> array4;
+
+// array4 shares memory with array1, any changes in array4 will be changes in array1
+array4 = array1;
+
+// Create empty 5-dimensional array
+ndarray<double, 5> array5;
+
+// Make a deep copy of array1 and assign it to array5
+
+array5 = array1.copy();
+
+// Create an array of the same shape as array1
+ndarray<double, 5> array6(3,4,5,6,7);
+
+// Assign all elements of array1 to array6
+array6 << array1;
 
 ```
+
+Keep in mind that `operator<<` requires both arrays to have the same shape. This check is enfourced in `Debug` mode and 
+omitted in `Release` mode for performance reasons.
+
+***
 
 To perform basic mathematic operations you need to include `<green/ndarray/ndarray_math.h>` header.
 
