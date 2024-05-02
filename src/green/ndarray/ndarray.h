@@ -388,6 +388,8 @@ namespace green::ndarray {
       shape_   = new_shape;
       strides_ = strides_for_shape(shape_);
       offset_  = 0;
+      if(size_for_shape(shape_) == size_)
+        return;
       size_    = size_for_shape(shape_);
       storage_ = storage_t(sizeof(T) * size_);
     }

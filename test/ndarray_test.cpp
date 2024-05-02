@@ -282,6 +282,7 @@ TEST_CASE("NDArrayTest") {
     std::vector<size_t>         shape{2, 1, 5, 3, 5};
     std::vector<size_t>         wrong_shape{2, 1, 5, 3};
     std::array<size_t, 5>       shape_arr{1, 1, 2, 2, 1};
+    std::array<size_t, 5>       reshape_arr{1, 1, 1, 2, 2};
     array.resize(shape);
     empty_array.resize(shape);
     REQUIRE(std::equal(shape.begin(), shape.end(), array.shape().begin()));
@@ -302,6 +303,10 @@ TEST_CASE("NDArrayTest") {
       REQUIRE_THROWS(resized_array.resize(1, 2, 3, 5, 6));
 #endif
     }
+    initialize_array(array);
+    auto ref_val = &array(0, 0, 0, 0, 0);
+    array.resize(reshape_arr);
+    REQUIRE(ref_val == &array(0, 0, 0, 0, 0));
   }
 
   SECTION("View") {
