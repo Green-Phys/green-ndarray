@@ -437,7 +437,9 @@ namespace green::ndarray {
       ndarray<T2, Dim>        result(new_shape);
       std::transform(begin(), end(), result.begin(), [](const T& a) {
         if constexpr (is_complex_v<T> && !is_complex_v<T2>) {
+#ifndef NDEBUG
           std::cerr << "Imaginary part will be discarded when converting from complex into real";
+#endif
           return T2(a.real());
         } else {
           return T2(a);
@@ -462,7 +464,9 @@ namespace green::ndarray {
 #endif
       std::transform(rhs.begin(), rhs.end(), begin(), [](const T& a) {
         if constexpr (is_complex_v<T2> && !is_complex_v<T>) {
+#ifndef NDEBUG
           std::cerr << "Imaginary part will be discarded when converting from complex into real";
+#endif
           return T(a.real());
         } else {
           return T(a);
