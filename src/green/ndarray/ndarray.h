@@ -105,7 +105,7 @@ namespace green::ndarray {
     template <typename shape_type>
     explicit ndarray(T* data, const shape_type& shape) :
         shape_(get_shape(shape)), strides_(strides_for_shape(shape)), size_(size_for_shape(shape)), offset_(0),
-        storage_(data, size_) {
+        storage_(data, sizeof(T) * size_) {
       if (data) set_value(0.0);
     }
 
