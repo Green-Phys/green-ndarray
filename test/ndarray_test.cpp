@@ -118,6 +118,22 @@ TEST_CASE("NDArrayTest") {
         std::equal(array.begin(), array.end(), array_ref2.begin(), [](double a, double b) { return std::abs(a - b) < 1e-12; }));
   }
 
+  SECTION("Check storage size consistensy") {
+    std::vector<double> x(200);
+    // make shape consistent with the vector size
+    std::array<size_t, 3>       shape{20, 5, 2};
+    // create ndarray referencing data in x
+    ndarray::ndarray<double, 3> array_ref(x.data(), shape);
+    // check that size assigned in storage is consistent with actual size of data
+    REQUIRE(array_ref.storage().data().size  == x.size() * sizeof(decltype(x)::value_type));
+    // create a complex view of an array
+    auto carray_ref = array_ref.view<std::complex<double>>();
+    // check that new array points to the same memory region
+    REQUIRE(array_ref.storage().data().ptr == carray_ref.storage().data().ptr);
+    // check that new array storage size is still correct
+    REQUIRE(carray_ref.storage().data().size  == x.size() * sizeof(decltype(x)::value_type));
+  }
+
   SECTION("Slice") {
     ndarray::ndarray<double, 5> array(1, 2, 3, 4, 5);
     initialize_array(array);
